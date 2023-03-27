@@ -298,7 +298,7 @@ c
 
 ggplot(df, aes(x = eigen, y = LOS)) + geom_point()
 
-ggsave(file = "/media/storageE/ariel/R/finalpaper/liquid.hic.LOS/LOS.pdf", c)
+#ggsave(file = "/media/storageE/ariel/R/finalpaper/liquid.hic.LOS/LOS.pdf", c)
 
 
 scatter.filtered <- scatter %>% filter(eigen < 1) %>%
@@ -312,3 +312,37 @@ ggplot(scatter.filtered, aes(x = type, y = median, colour = OR)) + geom_point(si
   ggtitle("Chr 4")
 
 a
+
+
+#################################################
+#################################################
+           ### Correlation Plots ###
+#################################################
+#################################################
+
+e <- ggplot(scatter.5min %>% filter(bait_loc > 200000000, bait_loc < 500000000), aes(eigen, LOS)) + 
+  ylim(-0.2, 0.6) + 
+  ggtitle("5-min Liquid Hi-C") + 
+  geom_point(alpha = 0.5) + 
+  theme_classic()
+
+f <- ggplot(scatter.30min %>% filter(bait_loc > 200000000, bait_loc < 500000000), aes(eigen, LOS)) + 
+  ylim(-0.2, 0.6) + 
+  ggtitle("30-min Liquid Hi-C") + 
+  geom_point(alpha = 0.5)+ 
+  theme_classic()
+
+g <- ggplot(scatter.60min %>% filter(bait_loc > 200000000, bait_loc < 500000000), aes(eigen, LOS)) + 
+  ylim(-0.2, 0.6) + 
+  ggtitle("60-min Liquid Hi-C") + 
+  geom_point(alpha = 0.5)+ 
+  theme_classic()
+
+h <- ggplot(df %>% filter(bait_loc > 200000000, bait_loc < 500000000), aes(eigen, foldchange)) + 
+  geom_point(alpha = 0.5)+ 
+  ggtitle("H3K27ac HiChIP") + 
+  theme_classic()
+
+e + f + g + h + plot_layout(ncol = 4)
+
+

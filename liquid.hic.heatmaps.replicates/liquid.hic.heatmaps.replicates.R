@@ -727,5 +727,9 @@ a
 
 ggsave(file="/media/storageE/ariel/R/ompttatetop2.mor28icretdt.hic/mor28_p2_hub_heatmaps_square_normalized.pdf", a)
 
+####### Values
 
+enhancer.gg8.p2 %>% group_by(time, type) %>%
+  summarise(mean = mean(specificity),
+            sd = sd(specificity))
 

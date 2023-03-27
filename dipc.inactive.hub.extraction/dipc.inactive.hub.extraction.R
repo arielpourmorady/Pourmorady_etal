@@ -2,6 +2,8 @@ library(pheatmap)
 library(dendextend)
 library(ggplot2)
 library(dplyr)
+library(reshape2)
+library(ggpubr)
 
 `%notin%` <- Negate(`%in%`)
 set.seed(99)
@@ -538,15 +540,15 @@ islands_percell_dataframe_MOR28 <- rbind(islands_percell_dataframe_male_MOR28, i
 inactiveORs_percell_dataframe_MOR28 <- rbind(inactiveORs_percell_dataframe_male_MOR28, inactiveORs_percell_dataframe_female_MOR28)
 clusters_dataframe_MOR28 <- rbind(clusters_dataframe_male_MOR28, clusters_dataframe_female_MOR28)
 
-write.table(islands_percell_dataframe_MOR28,
-            "/media/storageE/ariel/R/finalpaper/dipc.inactive.hub.extraction/islands_percell_dataframe_MOR28.txt",
-            sep = "\t",
-            col.names = TRUE)
+#write.table(islands_percell_dataframe_MOR28,
+#            "/media/storageE/ariel/R/finalpaper/dipc.inactive.hub.extraction/islands_percell_dataframe_MOR28.txt",
+#            sep = "\t",
+#            col.names = TRUE)
 
-write.table(inactiveORs_percell_dataframe_MOR28,
-            "/media/storageE/ariel/R/finalpaper/dipc.inactive.hub.extraction/inactiveORs_percell_dataframe_MOR28.txt",
-            sep = "\t",
-            col.names = TRUE)
+#write.table(inactiveORs_percell_dataframe_MOR28,
+#            "/media/storageE/ariel/R/finalpaper/dipc.inactive.hub.extraction/inactiveORs_percell_dataframe_MOR28.txt",
+#            sep = "\t",
+#            col.names = TRUE)
 
 clusters_dataframe_MOR28_active <- clusters_dataframe_MOR28 %>%
   dplyr::filter(cluster == 1) %>%
@@ -953,3 +955,37 @@ ggplot(df_GI_distances_datalist_aggregated, aes(x = state, y = dist)) +
   geom_boxplot(width = 0.2) + 
   ylab("intra-hub GI distance") + 
   theme_classic()
+
+df_GI_distances_datalist_aggregated %>%
+  group_by(state) %>%
+  summarise(
+    mean = mean(dist),
+    sd = sd(dist)
+  )
+
+###################################################################################
+# The code below is a proof of principle that I am indeed extracting enhancers hubs
+# that contain similar numbers of enhancer elements
+###################################################################################
+
+islands_percell_dataframe_P2$geno <- "P2"
+islands_percell_dataframe_MOR28$geno <- "MOR28"
+
+islands_percell_dataframe <- rbind(islands_percell_dataframe_P2, islands_percell_dataframe_MOR28) %>%
+  group_by(geno, cell, state) %>%
+  summarise(total = n())
+
+ggplot(islands_percell_dataframe, aes(x = state, y = total)) + 
+  geom_violin(fill = "grey") + 
+  geom_boxplot(width = 0.2) + 
+  ylab("GIs per GIH") + 
+  theme_classic()
+
+islands_percell_dataframe %>%
+  group_by(state) %>%
+  summarise(
+    mean = mean(total),
+    sd = sd(total)
+  )
+
+

@@ -724,8 +724,10 @@ grid.arrange(a[[4]], b[[4]],ncol = 2)
 ### Violin Plots ###
 ####################
 
-df1 <- Islands_10kb$prey %>% as.data.frame() %>% rename("bait" = ".")
-df2 <- Islands_10kb$prey %>% as.data.frame() %>% rename("bait" = ".")
+Islands_10kb_filtered <- Islands_10kb %>% filter(!grepl("7_", prey))
+
+df1 <- Islands_10kb_filtered$prey %>% as.data.frame() %>% rename("bait" = ".")
+df2 <- Islands_10kb_filtered$prey %>% as.data.frame() %>% rename("bait" = ".")
 
 df1$geno <- "gg8.p2.ctrl.IF"
 df2$geno <- "gg8tta.tetop2.h27ac.HiChIP.IP"
@@ -768,35 +770,20 @@ island_to_activeOR[is.na(island_to_activeOR)] <- 0
 
 
 a <- ggplot(island_to_activeOR, aes(x = geno, y = sum_norm)) + 
- # geom_violin(fill = "grey", alpha ) +
-#  geom_boxplot(width = 0.2) + 
-  geom_dotplot(binaxis = "y",
-       stackdir = "center", 
-       dotsize = 0.5, 
-       binwidth = 0.2,
-       alpha = 0.5) + 
+  geom_violin(fill = "darkgreen", alpha = 0.5) +
+  geom_boxplot(width = 0.2) + 
   theme_classic()
 a
 
 
 b <- ggplot(island_to_island, aes(x = geno, y = sum_norm)) + 
-  #geom_violin(fill = "grey") +
- # geom_boxplot(width = 0.2) + 
-  geom_dotplot(binaxis = "y",
-               stackdir = "center", 
-               dotsize = 0.5, 
-               binwidth = 0.2,
-               alpha = 0.5) + 
+    geom_violin(fill = "grey", alpha = 0.5) +
+  geom_boxplot(width = 0.2) + 
   theme_classic()
-
+b
 c <- ggplot(island_to_inactiveORs, aes(x = geno, y = sum_norm)) + 
- # geom_violin(fill = "grey") +
- # geom_boxplot(width = 0.2, colour = "#b10101") + 
-  geom_dotplot(binaxis = "y",
-               stackdir = "center", 
-               dotsize = 0.5, 
-               binwidth = 0.2,
-               alpha = 0.5) + 
+  geom_violin(fill = "firebrick3", alpha = 0.5) +
+  geom_boxplot(width = 0.2) + 
   theme_classic()
 
 a + b + c
@@ -815,17 +802,20 @@ t_test_fxn(island_to_inactiveORs)
 island_to_activeOR %>% 
   group_by(geno) %>%
   summarise(mean = mean(sum_norm),
-            sd = sd(sum_norm))
+            sd = sd(sum_norm),
+            n = n())
 
 island_to_inactiveORs%>% 
   group_by(geno) %>%
   summarise(mean = mean(sum_norm),
-            sd = sd(sum_norm))
+            sd = sd(sum_norm),
+            n = n())
 
 island_to_island%>% 
   group_by(geno) %>%
   summarise(mean = mean(sum_norm),
-            sd = sd(sum_norm))
+            sd = sd(sum_norm),
+            n = n())
 
 
 

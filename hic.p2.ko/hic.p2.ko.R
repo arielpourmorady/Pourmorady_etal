@@ -269,7 +269,7 @@ TwoMB.ORs <- TwoMB.ORs %>% dplyr::select(prey_chr, prey_loc, type, name, order, 
 
 filter <- rbind(TwoMB.Islands, TwoMB.ORs) %>% dplyr::select(prey) %>% unique()
 
-for (i in c(10)) {
+for (i in c(1)) {
   trans_all = fread(trans_hic_path[i], col.names = c("bait", "prey", "contact"))
   trans_all$arch = 'trans'
   trans_all <- trans_all[trans_all$bait %in% filter$prey,] # You should activate this when you *ARE* FILTERING
@@ -714,6 +714,9 @@ a <- ggplot(df, aes(x = prey_order, y = norm, colour = geno)) +
   theme_classic()
 a
 
+df %>% filter(prey_order == 20)
+
+
 ########################################################
 #### Cummulative GI Contacts to all Over Development ###
 ########################################################
@@ -788,7 +791,7 @@ oneOR_allGIs_df <- hic_contacts %>%
   dplyr::filter(bait %in% Islands_50kb$prey) %>%
   dplyr::filter(prey %in% OR_Clusters_50kb$prey) %>% 
   dplyr::filter(prey %out% Islands_50kb$prey) %>%
-  #dplyr::filter(arch == "trans") %>%
+  dplyr::filter(arch == "trans") %>%
   dplyr::filter(geno %in% c("hbc", "ngn", "atf5", "omp.gfp")) %>%
   group_by(prey, geno, arch) %>%
   summarise(sum_norm = sum(norm))
@@ -796,14 +799,19 @@ oneOR_allGIs_df <- hic_contacts %>%
 oneOR_allGIs_df$geno <- factor(oneOR_allGIs_df$geno, levels = c("hbc", "ngn", "atf5", "omp.gfp"))
 
 
-l <- ggplot(oneOR_allGIs_df, aes(x = geno, y = sum_norm, color = arch)) + 
+l <- ggplot(oneOR_allGIs_df, aes(x = geno, y = sum_norm)) + 
   geom_boxplot() +
   ylab("contacts") +
-  #stat_compare_means(method = "t.test", comparisons = my_comparisons) + 
+  stat_compare_means(method = "t.test", comparisons = my_comparisons) + 
   ggtitle("Cis/Trans GI Contacts to OR genes") + 
   theme_classic()
 l
   
+oneOR_allGIs_df %>% group_by(geno) %>%
+  mutate(sum_norm = sum_norm*1e9) %>%
+  summarise(mean = mean(sum_norm),
+            sd = sd(sum_norm),
+            n = n())
 grid.arrange(i[[4]], k[[4]], j[[4]], h[[4]], ncol = 4)
   
 
@@ -893,10 +901,6 @@ oneGI_allGIs_df$geno <- factor(oneGI_allGIs_df$geno, levels = c("hbc", "ngn", "a
 ggplot(oneGI_allGIs_df, aes(x = geno, y = sum_norm)) + 
   geom_boxplot() +
   theme_classic()
-
-
-
-
 
 P2_allGIs_df <- hic_contacts %>%
   dplyr::filter(bait == P2) %>%
