@@ -16,13 +16,11 @@ library(pheatmap)
 library(R.utils)
 library(populationPDXdesign)
 library(multiHiCcompare)
-library(ggeasy)
-library(patchwork)
 
 # set directory to current directory
 # this directory should contain all files in the GitHub folder
 
-working_directory <- "/media/storageE/ariel/R/finalpaper_finalized/hichip/"
+working_directory <- "/media/storageE/ariel/R/finalpaper_finalized/liquidhic/liquid.hic.heatmaps/"
 setwd(working_directory) 
 
 `%notin%` <- Negate(`%in%`)
@@ -31,17 +29,15 @@ setwd(working_directory)
 ##############################################################################
 ##############################################################################
 
+## Script to extract eigen score ##
+#java -jar juicer_tools.jar eigenvector <NONE/VC/VC_SQRT/KR> <hicFile(s)> <chr> <BP/FRAG> <binsize> [outfile]
+# execute the above script in bash
+
 ## Juicer Merged Files with KR Normalization ##
 options(scipen = 999)
 
 dump_dir <- working_directory
 bin_size <- 50000
-
-bed_to_prey <- function(x) {
-  y <- read.delim(x,header=FALSE) %>% mutate(chrNo = as.numeric(str_replace(V1,"chr",""))) %>% filter(!is.na(chrNo)) %>% arrange(chrNo,V2) %>% mutate(prey = str_c(chrNo,"_",V2)) %>% dplyr::select(prey)
-  return(y)
-} # will remove intervals from non numeric chromosomes with a warning about NA
-
 
 ## FUNCTIONS ##
 format_trans_path <- function(name){
@@ -54,29 +50,71 @@ format_cis_path <- function(name){
 }
 
 # Loading .txt.gz file from dump
+gg8.p2.ctrl.name <- "gg8tTA.tetOP2.het.control.ImmediateFix.LiquidHiC.merge"
+gg8.p2.ctrl.trans_hic_path <-format_trans_path(gg8.p2.ctrl.name)
+gg8.p2.ctrl.cis_hic_path <-format_cis_path(gg8.p2.ctrl.name)
+gg8.p2.ctrl.total_count <- 362670259
 
-gg8.p2.ctrl.IF.name <- "gg8tTA.tetOP2.het.control.ImmediateFix.LiquidHiC.merge"
-gg8.p2.ctrl.IF.trans_hic_path <-format_trans_path(gg8.p2.ctrl.IF.name)
-gg8.p2.ctrl.IF.cis_hic_path <-format_cis_path(gg8.p2.ctrl.IF.name)
-gg8.p2.ctrl.IF.total_count <- 362670259
+gg8.p2.5m.name <- "gg8tTA.tetOP2.het.control.5minPreDig.LiquidHiC.merge"
+gg8.p2.5m.trans_hic_path <-format_trans_path(gg8.p2.5m.name)
+gg8.p2.5m.cis_hic_path <-format_cis_path(gg8.p2.5m.name)
+gg8.p2.5m.total_count <- 266530739
 
-gg8tta.tetop2.h27ac.HiChIP.IP.name <- "gg8tTAtetOP2.H3K27ac.HiChIP.AP151.AP152"
-gg8tta.tetop2.h27ac.HiChIP.IP.trans_hic_path <-format_trans_path(gg8tta.tetop2.h27ac.HiChIP.IP.name)
-gg8tta.tetop2.h27ac.HiChIP.IP.cis_hic_path <-format_cis_path(gg8tta.tetop2.h27ac.HiChIP.IP.name)
-gg8tta.tetop2.h27ac.HiChIP.IP.total_count <- 332494243
+gg8.p2.30m.name <- "gg8tTA.tetOP2.het.control.30minPreDig.Liquid.HiC.210807.merge"
+gg8.p2.30m.trans_hic_path <-format_trans_path(gg8.p2.30m.name)
+gg8.p2.30m.cis_hic_path <-format_cis_path(gg8.p2.30m.name)
+gg8.p2.30m.total_count <- 170046887
+
+gg8.p2.60m.name <- "gg8tTA.tetOP2.het.control.60minPreDig.Liquid.HiC.210807.merge"
+gg8.p2.60m.trans_hic_path <-format_trans_path(gg8.p2.60m.name)
+gg8.p2.60m.cis_hic_path <-format_cis_path(gg8.p2.60m.name)
+gg8.p2.60m.total_count <- 200315002
+
+
+## ESTABLISH BINS ##
+
+bed_to_bait <- function(x) {
+  y <- read.delim(x,header=FALSE) %>% mutate(chrNo = as.numeric(str_replace(V1,"chr",""))) %>% filter(!is.na(chrNo)) %>% arrange(chrNo,V2) %>% mutate(bait = str_c(chrNo,"_",V2)) %>% select(bait)
+  return(y)
+} # will remove intervals from non numeric chromosomes with a warning about NA
+
+bed_to_prey <- function(x) {
+  y <- read.delim(x,header=FALSE) %>% mutate(chrNo = as.numeric(str_replace(V1,"chr",""))) %>% filter(!is.na(chrNo)) %>% arrange(chrNo,V2) %>% mutate(prey = str_c(chrNo,"_",V2)) %>% select(prey)
+  return(y)
+} # will remove intervals from non numeric chromosomes with a warning about NA
+
+All_Bins_bait <- bed_to_bait("mm10_assembled.50kb.bed")
+OR_Clusters_50kb_bait <- bed_to_bait("ORClusters.ordered.no-chrX.mm10.50kb.mm10.bed") %>% 
+  mutate(type="OR_Clusters")
+Islands_50kb_bait <- bed_to_bait("Greek_Islands.50kb.mm10.bed") %>% 
+  mutate(type="Islands")
+
+All_Bins_prey <- bed_to_prey("mm10_assembled.50kb.bed")
+OR_Clusters_50kb_prey <- bed_to_prey("ORClusters.ordered.no-chrX.mm10.50kb.mm10.bed") %>% 
+  mutate(type="OR_Clusters")
+Islands_50kb_prey <- bed_to_prey("Greek_Islands.50kb.mm10.bed") %>% 
+  mutate(type="Islands")
 
 
 # All Bins ... Juicer KR Normalized Merged Files
 
 
-libraries <- c("gg8.p2.ctrl.IF",
-               "gg8tta.tetop2.h27ac.HiChIP.IP") # Here is the name of each library "P2","OMP", , "liquid.HiC.control", "liquid.HiC.30", "liquid.HiC.60"
-trans_hic_path <- c(gg8.p2.ctrl.IF.trans_hic_path,
-                    gg8tta.tetop2.h27ac.HiChIP.IP.trans_hic_path) # Here are the trans conctacts  control.acid.r1.trans_hic_path, , control.acid.r1.trans_hic_path, liquid.HiC.control.trans_hic_path, liquid.HiC.30.trans_hic_path, liquid.HiC.60.trans_hic_path 
-cis_hic_path <- c(gg8.p2.ctrl.IF.cis_hic_path,
-                  gg8tta.tetop2.h27ac.HiChIP.IP.cis_hic_path)#Here are the cis contacts  , P2.cis_hic_path, OMP.cis_hic_path, , control.acid.r1.cis_hic_path, liquid.HiC.control.cis_hic_path,liquid.HiC.30.cis_hic_path,liquid.HiC.60.cis_hic_path
-total_count <- c(gg8.p2.ctrl.IF.total_count,
-                 gg8tta.tetop2.h27ac.HiChIP.IP.total_count)
+libraries <- c("gg8.p2.ctrl",
+               "gg8.p2.5m",
+               "gg8.p2.30m",
+               "gg8.p2.60m") # Here is the name of each library "P2","OMP", , "liquid.HiC.control", "liquid.HiC.30", "liquid.HiC.60"
+trans_hic_path <- c(gg8.p2.ctrl.trans_hic_path,
+                    gg8.p2.5m.trans_hic_path,
+                    gg8.p2.30m.trans_hic_path,
+                    gg8.p2.60m.trans_hic_path) # Here are the trans conctacts  control.acid.r1.trans_hic_path, , control.acid.r1.trans_hic_path, liquid.HiC.control.trans_hic_path, liquid.HiC.30.trans_hic_path, liquid.HiC.60.trans_hic_path 
+cis_hic_path <- c(gg8.p2.ctrl.cis_hic_path,
+                  gg8.p2.5m.cis_hic_path,
+                  gg8.p2.30m.cis_hic_path,
+                  gg8.p2.60m.cis_hic_path)#Here are the cis contacts  , P2.cis_hic_path, OMP.cis_hic_path, , control.acid.r1.cis_hic_path, liquid.HiC.control.cis_hic_path,liquid.HiC.30.cis_hic_path,liquid.HiC.60.cis_hic_path
+total_count <- c(gg8.p2.ctrl.total_count,
+                 gg8.p2.5m.total_count,
+                 gg8.p2.30m.total_count,
+                 gg8.p2.60m.total_count)
 
 
 #############################
@@ -91,9 +129,9 @@ total_count <- c(gg8.p2.ctrl.IF.total_count,
 # Two MB Island Filter
 
 options(scipen = 999)
-All_Bins_prey <- bed_to_prey("/media/storageA/kevin/annotation/mm10_assembled.50kb.bed")
+All_Bins_prey <- bed_to_prey("mm10_assembled.50kb.bed")
 
-Islands_50kb <- read.table("/media/storageE/ariel/annotations/Greek_Islands.bed") %>%
+Islands_50kb <- read.table("Greek_Islands.bed") %>%
   mutate(chr = V1, loc = (floor(V3/bin_size))*bin_size, type = V4) %>%
   separate(chr, sep = "r", into = c("chr_1", "chr_2")) %>%
   mutate(prey = paste(chr_2, loc, sep = "_")) %>%
@@ -139,9 +177,9 @@ TwoMB.Islands <- TwoMB.Islands %>% dplyr::select(prey_chr, prey_loc, type, name,
 # Two MB OR Filter
 
 options(scipen = 999)
-All_Bins_prey <- bed_to_prey("/media/storageA/kevin/annotation/mm10_assembled.50kb.bed")
+All_Bins_prey <- bed_to_prey("mm10_assembled.50kb.bed")
 
-OR_Clusters_50kb <- read.table("/media/storageA/kevin/annotation/ORs-by-cluster.bed") %>%
+OR_Clusters_50kb <- read.table("ORs-by-cluster.bed") %>%
   mutate(chr = V1, loc = (floor(V3/bin_size))*bin_size, cluster = V5, or = V4) %>%
   separate(chr, sep = "r", into = c("chr_1", "chr_2")) %>%
   mutate(prey = paste(chr_2, loc, sep = "_")) %>%
@@ -187,7 +225,7 @@ TwoMB.ORs <- TwoMB.ORs %>% dplyr::select(prey_chr, prey_loc, type, name, order, 
 
 filter <- rbind(TwoMB.Islands, TwoMB.ORs) %>% dplyr::select(prey) %>% unique()
 
-for (i in c(1:2)) {
+for (i in c(1:4)) {
   trans_all = fread(trans_hic_path[i], col.names = c("bait", "prey", "contact"))
   trans_all$arch = 'trans'
   trans_all <- trans_all[trans_all$bait %in% filter$prey,] # You should activate this when you *ARE* FILTERING
@@ -242,7 +280,6 @@ df_islands <- TwoMB.Islands %>%
 order_tbl_df <- data.frame(bait_order = 1:39) 
 order_tbl_df <- expand.grid(bait_order = order_tbl_df$bait_order, prey_order = order_tbl_df$bait_order) %>% as_tibble()
 
-# Fifty KB
 P2 <- "7_107050000"
 P2_cluster <- "OR-Cluster-26_Olfr714,OR-Cluster-26_Olfr17"
 
@@ -333,144 +370,175 @@ inactiveP2_to_enhancer_matrix <- function(hic_contacts, genotype, arch, normaliz
 }
 
 
+
 ###########################
 ### MATRICES & HEATMAPS ###
 ###########################
-# Must be done at Fifty-KB resolution
 
-# Generate Contact Specificity Score
-activeP2_to_enhancer_matrix(hic_contacts, "gg8.p2.ctrl.IF", "trans", "square") %>% filter(bait_order == 20, prey_order == 20)
-activeP2_to_enhancer_matrix(hic_contacts, "gg8tta.tetop2.h27ac.HiChIP.IP", "trans", "square") %>% filter(bait_order == 20, prey_order == 20)
-inactiveP2_to_enhancer_matrix(hic_contacts, "gg8.p2.ctrl.IF", "trans", "square")%>% filter(bait_order == 20, prey_order == 20)
-inactiveP2_to_enhancer_matrix(hic_contacts, "gg8tta.tetop2.h27ac.HiChIP.IP", "trans", "square") %>% filter(bait_order == 20, prey_order == 20)
+# Generate Contact Specificity Score #
+activeP2_to_enhancer_matrix(hic_contacts, "gg8.p2.ctrl", "trans", "square") %>% filter(bait_order == 20, prey_order == 20)
+activeP2_to_enhancer_matrix(hic_contacts, "gg8.p2.5m", "trans", "square")%>% filter(bait_order == 20, prey_order == 20)
+activeP2_to_enhancer_matrix(hic_contacts, "gg8.p2.30m", "trans", "square")%>% filter(bait_order == 20, prey_order == 20)
+activeP2_to_enhancer_matrix(hic_contacts, "gg8.p2.60m", "trans", "square")%>% filter(bait_order == 20, prey_order == 20)
 
+inactiveP2_to_enhancer_matrix(hic_contacts, "gg8.p2.ctrl", "trans", "square") %>% filter(bait_order == 20, prey_order == 20)
+inactiveP2_to_enhancer_matrix(hic_contacts, "gg8.p2.5m", "trans", "square")%>% filter(bait_order == 20, prey_order == 20)
+inactiveP2_to_enhancer_matrix(hic_contacts, "gg8.p2.30m", "trans", "square")%>% filter(bait_order == 20, prey_order == 20)
+inactiveP2_to_enhancer_matrix(hic_contacts, "gg8.p2.60m", "trans", "square")%>% filter(bait_order == 20, prey_order == 20)
+##
 
-activeP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP <- activeP2_to_enhancer_matrix(hic_contacts, "gg8tta.tetop2.h27ac.HiChIP.IP", "trans", "square") %>% dcast(bait_order ~ prey_order, value.var = "norm")
-activeP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP <- activeP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP[,-1]
-activeP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.input <- activeP2_to_enhancer_matrix(hic_contacts, "gg8.p2.ctrl.IF", "trans", "square")%>% dcast(bait_order ~ prey_order, value.var = "norm")
-activeP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.input<- activeP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.input[,-1]
-
-paletteLength <- 100
-myColor <- colorRampPalette(c("white", "firebrick3"))(paletteLength)
-myBreaks <- c(seq(min(activeP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP), 
-                  max(activeP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP), 
-                  length.out=ceiling(paletteLength)))
-
-a <- pheatmap(activeP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP, 
-              cluster_rows=FALSE, 
-              cluster_cols=FALSE, 
-              border_color = NA,
-              show_rownames = FALSE,
-              show_colnames = FALSE,
-              col = myColor,
-              cellheight=3, cellwidth = 3,
-              breaks = myBreaks)
-
-b <- pheatmap(activeP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.input, 
-              cluster_rows=FALSE, 
-              cluster_cols=FALSE, 
-              border_color = NA,
-              show_rownames = FALSE,
-              show_colnames = FALSE,
-              col = myColor,
-              cellheight=3, cellwidth = 3,
-              breaks = myBreaks)
-
-## Log Fold Change in Contact Specificity
-
-100*(activeP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.input[20,20] - activeP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP[20,20])/activeP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.input[20,20]
-#2.221638 increase in contact specificity
-
-#df <- log2(activeP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP/activeP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.input)
-#df[sapply(df, is.infinite)] <- NA
-
-df <- activeP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP - activeP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.input
-#df <- df[86:114, 86:114]
-# Fifty Kb
-ymin <- min(df)
-ymax <- max(df)
-
-
-paletteLength <- 100
-myColor <- colorRampPalette(c("blue3", "white", "firebrick3"))(paletteLength)
-myBreaks <- c(seq(ymin, 0, length.out=ceiling(paletteLength/2)), 
-               seq((ymax - ymin)/100, ymax, length.out=floor(paletteLength/2)))
- 
-c <- pheatmap(df[16:24,16:24], 
-               cluster_rows=FALSE, 
-               cluster_cols=FALSE, 
-               border_color = NA,
-               show_rownames = FALSE,
-               show_colnames = FALSE,
-               col = myColor,
-               cellheight=3, cellwidth = 3,
-              breaks = myBreaks)
-
-grid.arrange(a[[4]], b[[4]], c[[4]])
-
-
-inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP <- inactiveP2_to_enhancer_matrix(hic_contacts, "gg8tta.tetop2.h27ac.HiChIP.IP", "trans", "square") %>% dcast(bait_order ~ prey_order, value.var = "norm")
-inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP <- inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP[,-1]
-inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.input <- inactiveP2_to_enhancer_matrix(hic_contacts, "gg8.p2.ctrl.IF", "trans", "square")%>% dcast(bait_order ~ prey_order, value.var = "norm")
-inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.input<- inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.input[,-1]
+activeP2_to_enhancer_matrix.gg8.p2.ctrl <- activeP2_to_enhancer_matrix(hic_contacts, "gg8.p2.ctrl", "trans", "square") %>% dcast(bait_order ~ prey_order, value.var = "norm")
+activeP2_to_enhancer_matrix.gg8.p2.5m <- activeP2_to_enhancer_matrix(hic_contacts, "gg8.p2.5m", "trans", "square")%>% dcast(bait_order ~ prey_order, value.var = "norm")
+activeP2_to_enhancer_matrix.gg8.p2.30m <- activeP2_to_enhancer_matrix(hic_contacts, "gg8.p2.30m", "trans", "square")%>% dcast(bait_order ~ prey_order, value.var = "norm")
+activeP2_to_enhancer_matrix.gg8.p2.60m <- activeP2_to_enhancer_matrix(hic_contacts, "gg8.p2.60m", "trans", "square")%>% dcast(bait_order ~ prey_order, value.var = "norm")
 
 paletteLength <- 100
 myColor <- colorRampPalette(c("white", "firebrick3"))(paletteLength)
-myBreaks <- c(seq(min(inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP), 
-                  max(inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP), 
+myBreaks <- c(seq(min(activeP2_to_enhancer_matrix.gg8.p2.ctrl[,-1]), 
+                  max(activeP2_to_enhancer_matrix.gg8.p2.ctrl[,-1]), 
                   length.out=ceiling(paletteLength)))
 
-g <- pheatmap(inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP, 
+a <- pheatmap(activeP2_to_enhancer_matrix.gg8.p2.ctrl[,-1], 
               cluster_rows=FALSE, 
               cluster_cols=FALSE, 
               border_color = NA,
               show_rownames = FALSE,
               show_colnames = FALSE,
               col = myColor,
-              cellheight=3, cellwidth = 3,
+              cellheight=2.5, cellwidth = 2.5,
               breaks = myBreaks)
 
-h <- pheatmap(inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.input, 
+b <- pheatmap(activeP2_to_enhancer_matrix.gg8.p2.5m[,-1], 
               cluster_rows=FALSE, 
               cluster_cols=FALSE, 
               border_color = NA,
               show_rownames = FALSE,
               show_colnames = FALSE,
               col = myColor,
-              cellheight=3, cellwidth = 3,
+              cellheight=2.5, cellwidth = 2.5,
               breaks = myBreaks)
 
-## Log Fold Change in Contact Specificity
+c <- pheatmap(activeP2_to_enhancer_matrix.gg8.p2.30m[,-1], 
+              cluster_rows=FALSE, 
+              cluster_cols=FALSE, 
+              border_color = NA,
+              show_rownames = FALSE,
+              show_colnames = FALSE,
+              col = myColor,
+              cellheight=2.5, cellwidth = 2.5,
+              breaks = myBreaks)
 
-#inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP[20,20]/inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.input[20,20]
-#2.221638 increase in contact specificity
-100*(inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.input[20,20] - inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP[20,20])/inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.input[20,20]
+d <- pheatmap(activeP2_to_enhancer_matrix.gg8.p2.60m[,-1], 
+              cluster_rows=FALSE, 
+              cluster_cols=FALSE, 
+              border_color = NA,
+              show_rownames = FALSE,
+              show_colnames = FALSE,
+              col = myColor,
+              cellheight=2.5, cellwidth = 2.5,
+              breaks = myBreaks)
 
-#df <- log2(inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP/inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.input)
-#df[sapply(df, is.infinite)] <- NA
 
-df <- inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.IP - inactiveP2_to_enhancer_matrix.gg8tta.tetop2.h27ac.HiChIP.input
-#df <- df[85:115, 85:115]
-# Fifty Kb
-ymin <- min(df)
-ymax <- max(df)
+
+inactiveP2_to_enhancer_matrix.gg8.p2.ctrl <- inactiveP2_to_enhancer_matrix(hic_contacts, "gg8.p2.ctrl", "trans", "square") %>% dcast(bait_order ~ prey_order, value.var = "norm")
+inactiveP2_to_enhancer_matrix.gg8.p2.5m <- inactiveP2_to_enhancer_matrix(hic_contacts, "gg8.p2.5m", "trans", "square")%>% dcast(bait_order ~ prey_order, value.var = "norm")
+inactiveP2_to_enhancer_matrix.gg8.p2.30m <- inactiveP2_to_enhancer_matrix(hic_contacts, "gg8.p2.30m", "trans", "square")%>% dcast(bait_order ~ prey_order, value.var = "norm")
+inactiveP2_to_enhancer_matrix.gg8.p2.60m <- inactiveP2_to_enhancer_matrix(hic_contacts, "gg8.p2.60m", "trans", "square")%>% dcast(bait_order ~ prey_order, value.var = "norm")
 
 paletteLength <- 100
-myColor <- colorRampPalette(c("blue3", "white", "firebrick3"))(paletteLength)
-myBreaks <- c(seq(ymin, 0, length.out=ceiling(paletteLength/2)), 
-              seq((ymax - ymin)/100, ymax, length.out=floor(paletteLength/2)))
+myColor <- colorRampPalette(c("white", "firebrick3"))(paletteLength)
+myBreaks <- c(seq(min(inactiveP2_to_enhancer_matrix.gg8.p2.ctrl[,-1]), 
+                  max(inactiveP2_to_enhancer_matrix.gg8.p2.ctrl[,-1]), 
+                  length.out=ceiling(paletteLength)))
 
-i <- pheatmap(df[16:24,16:24], 
+e <- pheatmap(inactiveP2_to_enhancer_matrix.gg8.p2.ctrl[,-1], 
               cluster_rows=FALSE, 
               cluster_cols=FALSE, 
               border_color = NA,
               show_rownames = FALSE,
               show_colnames = FALSE,
               col = myColor,
-              cellheight=3, cellwidth = 3,
+              cellheight=2.5, cellwidth = 2.5,
               breaks = myBreaks)
 
-grid.arrange(g[[4]], h[[4]], i[[4]])
+f <- pheatmap(inactiveP2_to_enhancer_matrix.gg8.p2.5m[,-1], 
+              cluster_rows=FALSE, 
+              cluster_cols=FALSE, 
+              border_color = NA,
+              show_rownames = FALSE,
+              show_colnames = FALSE,
+              col = myColor,
+              cellheight=2.5, cellwidth = 2.5,
+              breaks = myBreaks)
 
-grid.arrange(b[[4]], a[[4]], c[[4]],
-             h[[4]], g[[4]], i[[4]], ncol = 3)
+g <- pheatmap(inactiveP2_to_enhancer_matrix.gg8.p2.30m[,-1], 
+              cluster_rows=FALSE, 
+              cluster_cols=FALSE, 
+              border_color = NA,
+              show_rownames = FALSE,
+              show_colnames = FALSE,
+              col = myColor,
+              cellheight=2.5, cellwidth = 2.5,
+              breaks = myBreaks)
+
+h <- pheatmap(inactiveP2_to_enhancer_matrix.gg8.p2.60m[,-1], 
+              cluster_rows=FALSE, 
+              cluster_cols=FALSE, 
+              border_color = NA,
+              show_rownames = FALSE,
+              show_colnames = FALSE,
+              col = myColor,
+              cellheight=2.5, cellwidth = 2.5,
+              breaks = myBreaks)
+
+
+grid.arrange(a[[4]], b[[4]], c[[4]], d[[4]], 
+             e[[4]], f[[4]], g[[4]], h[[4]], ncol = 4)
+
+
+#####################################
+### CHANGE IN CONTACT SPECIFICITY ###
+#####################################
+
+activeP2_to_enhancer.gg8.p2.ctrl <- activeP2_to_enhancer_matrix(hic_contacts, "gg8.p2.ctrl", "trans", "square") %>%
+  filter(bait_order == 20, prey_order == 20)
+activeP2_to_enhancer.gg8.p2.5m <- activeP2_to_enhancer_matrix(hic_contacts, "gg8.p2.5m", "trans", "square")%>%
+  filter(bait_order == 20, prey_order == 20)
+activeP2_to_enhancer.gg8.p2.30m <- activeP2_to_enhancer_matrix(hic_contacts, "gg8.p2.30m", "trans", "square")%>%
+  filter(bait_order == 20, prey_order == 20)
+activeP2_to_enhancer.gg8.p2.60m <- activeP2_to_enhancer_matrix(hic_contacts, "gg8.p2.60m", "trans", "square")%>%
+  filter(bait_order == 20, prey_order == 20)
+
+activeP2_to_enhancer.gg8.p2 <- as.data.frame(rbind(activeP2_to_enhancer.gg8.p2.ctrl, 
+                                                   activeP2_to_enhancer.gg8.p2.5m,
+                                                   activeP2_to_enhancer.gg8.p2.30m,
+                                                   activeP2_to_enhancer.gg8.p2.60m)) %>%
+  mutate(specificity = norm - activeP2_to_enhancer.gg8.p2.ctrl$norm) %>%
+  mutate(specificity = 100*specificity/activeP2_to_enhancer.gg8.p2.ctrl$norm) %>% 
+  select(norm, specificity)
+activeP2_to_enhancer.gg8.p2$type <- "active OR"
+activeP2_to_enhancer.gg8.p2$time <- c(0, 5, 30, 60)
+
+inactiveP2_to_enhancer.gg8.p2.ctrl <- inactiveP2_to_enhancer_matrix(hic_contacts, "gg8.p2.ctrl", "trans", "square") %>%
+  filter(bait_order == 20, prey_order == 20)
+inactiveP2_to_enhancer.gg8.p2.5m <- inactiveP2_to_enhancer_matrix(hic_contacts, "gg8.p2.5m", "trans", "square")%>%
+  filter(bait_order == 20, prey_order == 20)
+inactiveP2_to_enhancer.gg8.p2.30m <- inactiveP2_to_enhancer_matrix(hic_contacts, "gg8.p2.30m", "trans", "square")%>%
+  filter(bait_order == 20, prey_order == 20)
+inactiveP2_to_enhancer.gg8.p2.60m <- inactiveP2_to_enhancer_matrix(hic_contacts, "gg8.p2.60m", "trans", "square")%>%
+  filter(bait_order == 20, prey_order == 20)
+
+inactiveP2_to_enhancer.gg8.p2 <- as.data.frame(rbind(inactiveP2_to_enhancer.gg8.p2.ctrl, 
+                                                   inactiveP2_to_enhancer.gg8.p2.5m,
+                                                   inactiveP2_to_enhancer.gg8.p2.30m,
+                                                   inactiveP2_to_enhancer.gg8.p2.60m)) %>%
+  mutate(specificity = norm - inactiveP2_to_enhancer.gg8.p2.ctrl$norm) %>%
+  mutate(specificity = 100*specificity/inactiveP2_to_enhancer.gg8.p2.ctrl$norm) %>% 
+  select(norm, specificity)
+inactiveP2_to_enhancer.gg8.p2$type <- "inactive OR"
+inactiveP2_to_enhancer.gg8.p2$time <- c(0, 5, 30, 60)
+
+
+enhancer.gg8.p2 <- rbind(activeP2_to_enhancer.gg8.p2, inactiveP2_to_enhancer.gg8.p2)
+
+ggplot(enhancer.gg8.p2, aes(x = time, y = specificity, colour = type)) + geom_line()

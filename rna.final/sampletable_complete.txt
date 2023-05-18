@@ -1,0 +1,13 @@
+library	LibType	geno	condition	sex	batch	kit	data
+Atf5_rep2	PE	wt	Atf5	mixed	a	clonetech	/media/storageC/rachel/R Folder/RNA_MS_Atf5_rep2.q30.bam
+Atf5_rep3	PE	wt	Atf5	mixed	b	clonetech	/media/storageC/rachel/R Folder/RNA_Atf5_rep3_MS_June2018.q30.bam
+Icam_rep1	PE	wt	Icam	mixed	a	clonetech	/media/storageC/rachel/R Folder/RNA_MS_Icam_Rep1_March18.q30.bam
+Icam_rep2	PE	wt	Icam	mixed	a	clonetech	/media/storageC/rachel/R Folder/RNA_MS_Icam_rep2_March18.q30.bam
+Mash_rep1	PE	wt	Mash1	mixed	a	clonetech	/media/storageC/rachel/R Folder/RNA_MS_Mash1_rep1.q30.bam
+Mash_rep2	PE	wt	Mash1	mixed	a	clonetech	/media/storageC/rachel/R Folder/RNA_MS_Mash1_rep2.q30.bam
+MashNgn_rep1	PE	wt	Mash1Ngn	mixed	a	clonetech	/media/storageC/rachel/R Folder/RNA_MS_MashNgn_rep1.q30.bam
+MashNgn_rep2	PE	wt	Mash1Ngn	mixed	a	clonetech	/media/storageC/rachel/R Folder/RNA_MS_MashNgn_rep2.q30.bam
+Ngn_rep1	PE	wt	Ngn	mixed	a	clonetech	/media/storageC/rachel/R Folder/RNA_MS_Ngn_Rep1.q30.bam
+Ngn_rep2	PE	wt	Ngn	mixed	a	clonetech	/media/storageC/rachel/R Folder/RNA_MS_Ngn_Rep2.q30.bam
+OMP_rep1	PE	wt	OMP	mixed	a	clonetech	/media/storageC/rachel/R Folder/RNA_MS_OMP_rep1_March2018.q30.bam
+OMP_rep2	PE	wt	OMP	mixed	a	clonetech	/media/storageC/rachel/R Folder/RNA_MS_OMP_rep2_March18.q30.bam
