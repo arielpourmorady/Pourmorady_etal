@@ -11,12 +11,12 @@ Directories are divided by methodology and may contain subdirectories that are s
 To independently analyze this data, we provide all input and annotation files which are attached to the GEO superseries generated for this paper.
 
 ## Input Files
-[Dip-C]([url](https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE230380&format=file&file=GSE230380%5FPourmorady%5Fetal%5Fassociated%5Ffiles%5Fdipc%2Etar%2Egz))
+[Dip-C]([url](https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE230380&format=file&file=GSE230380%5FPourmorady%5Fetal%5Fassociated%5Ffiles%5Fdipc%2Etar%2Egz)): https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE230380&format=file&file=GSE230380%5FPourmorady%5Fetal%5Fassociated%5Ffiles%5Fdipc%2Etar%2Egz
 
-[Hi-C]([url](https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE230380&format=file&file=GSE230380%5FPourmorady%5Fetal%5Fassociated%5Ffiles%5Fhic%2Etar%2Egz))
+[Hi-C]([url](https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE230380&format=file&file=GSE230380%5FPourmorady%5Fetal%5Fassociated%5Ffiles%5Fhic%2Etar%2Egz)): https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE230380&format=file&file=GSE230380%5FPourmorady%5Fetal%5Fassociated%5Ffiles%5Fhic%2Etar%2Egz
 
-[HiChIP]([url](https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE230380&format=file&file=GSE230380%5FPourmorady%5Fetal%5Fassociated%5Ffiles%5Fhichip%2Etar%2Egz)) 
+[HiChIP]([url](https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE230380&format=file&file=GSE230380%5FPourmorady%5Fetal%5Fassociated%5Ffiles%5Fhichip%2Etar%2Egz)): https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE230380&format=file&file=GSE230380%5FPourmorady%5Fetal%5Fassociated%5Ffiles%5Fhichip%2Etar%2Egz 
 
-[Liquid Hi-C]([url](https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE230380&format=file&file=GSE230380%5FPourmorady%5Fetal%5Fassociated%5Ffiles%5Fliquidhic%2Etar%2Egz))
+[Liquid Hi-C]([url](https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE230380&format=file&file=GSE230380%5FPourmorady%5Fetal%5Fassociated%5Ffiles%5Fliquidhic%2Etar%2Egz)): https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE230380&format=file&file=GSE230380%5FPourmorady%5Fetal%5Fassociated%5Ffiles%5Fliquidhic%2Etar%2Egz
 
-[Raw NGS Data]([url](https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE230380&format=file))
+[Raw NGS Data]([url](https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE230380&format=file)): https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE230380&format=file
