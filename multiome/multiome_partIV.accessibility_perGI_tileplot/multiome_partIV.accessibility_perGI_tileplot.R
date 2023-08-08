@@ -15,7 +15,7 @@ options(scipen=999)
 fragpath <- "/data/outs/atac_fragments.tsv.gz"
 fragments <- CreateFragmentObject(fragpath)
 
-neurons <- readRDS("/data/finalpaper/multiome_partIII.pseudotime_plots/neurons.rds")
+neurons <- readRDS("/data/finalpaper_August2023/multiome_partIII.pseudotime_plots/neurons.rds")
 
 #################################################################################
 #################################################################################

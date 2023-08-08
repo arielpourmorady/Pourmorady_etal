@@ -18,7 +18,7 @@ library(cowplot)
 set.seed(1234)
 options(scipen=999)
 
-moe <- readRDS("/data/finalpaper/multiome.input_processing/moe.rds")
+moe <- readRDS("/data/finalpaper_August2023/multiome_partI.input_processing/moe.rds")
 
 ######################################################
 ######################################################

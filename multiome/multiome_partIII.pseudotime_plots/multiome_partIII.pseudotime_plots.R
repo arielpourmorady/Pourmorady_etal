@@ -18,7 +18,7 @@ options(scipen=999)
 fragpath <- "/data/outs/atac_fragments.tsv.gz"
 fragments <- CreateFragmentObject(fragpath)
 
-neurons <- readRDS("/data/finalpaper/multiome_partII.pseudotime_projection/neurons.rds")
+neurons <- readRDS("/data/finalpaper_August2023/multiome_partII.pseudotime_projection/neurons.rds")
 
 #################################################################################
 #################################################################################
@@ -80,6 +80,10 @@ gi_bed <- as.data.frame(read.table("/data/multiome/Greek_Islands.bed",header = F
 
 mOSN_cCREs_bed <- as.data.frame(read.table("/data/finalpaper/multiome_partI.input_processing/mOSN_cCREs.txt",header = TRUE, sep="\t",stringsAsFactors=FALSE))
 
+or_promoter_bed <- as.data.frame(read.table("/data/annotations/OR-xscript-Soria+UCSC.mm10.GeneID.300bp-promoter.bed",header = FALSE, sep="\t",stringsAsFactors=FALSE)) %>%
+  mutate(loc = paste(V1, V2, V3, sep = "-")) %>%
+  dplyr::select(loc)
+
 extract_peaks <- function(bed){
   df <- FeatureMatrix(
     fragments,
@@ -106,6 +110,7 @@ extract_peaks <- function(bed){
 gi_peaks <- extract_peaks(gi_bed)
 lhx2_ebf_peaks <- extract_peaks(lhx2_ebf_bed)
 mOSN_cCREs_peaks <- extract_peaks(mOSN_cCREs_bed)
+or_promoter_peaks <- extract_peaks(or_promoter_bed)
 
 neurons <- AddMetaData(
   object = neurons,
@@ -131,9 +136,23 @@ neurons <- AddMetaData(
   col.name = "Sum_mOSN_cCREs_peaks"
 )
 
+neurons <- AddMetaData(
+  object = neurons,
+  metadata = or_promoter_peaks$Sum_Acc_percell,
+  col.name = "Sum_ORpromoter_peaks"
+)
+
+neurons <- AddMetaData(
+  object = neurons,
+  metadata = or_promoter_peaks$Acc_perEnh_percell,
+  col.name = "Acc_perORpromoter_percell"
+)
+
 neurons@meta.data$Sum_gi_peaks <- neurons@meta.data$Sum_gi_peaks/neurons@meta.data$nCount_ATAC
 neurons@meta.data$Sum_lhx2_ebf_peaks <- neurons@meta.data$Sum_lhx2_ebf_peaks/neurons@meta.data$nCount_ATAC
 neurons@meta.data$Sum_mOSN_cCREs_peaks <- neurons@meta.data$Sum_mOSN_cCREs_peaks/neurons@meta.data$nCount_ATAC
+neurons@meta.data$Sum_ORpromoter_peaks <- neurons@meta.data$Sum_ORpromoter_peaks/neurons@meta.data$nCount_ATAC
+
 
 #########################################
 #########################################
@@ -145,7 +164,8 @@ neurons@meta.data$Sum_mOSN_cCREs_peaks <- neurons@meta.data$Sum_mOSN_cCREs_peaks
 metadata <- data.frame(neurons@meta.data)
 
 
-time <- metadata %>% dplyr::select(pseudotime, Sum_gi_peaks, Acc_perEnh_percell_gi_peaks, Sum_lhx2_ebf_peaks, Sum_mOSN_cCREs_peaks, ORtranscript)
+time <- metadata %>% dplyr::select(pseudotime, Sum_gi_peaks, Acc_perEnh_percell_gi_peaks, Sum_lhx2_ebf_peaks, Sum_mOSN_cCREs_peaks, ORtranscript,
+                                   Sum_ORpromoter_peaks, Acc_perORpromoter_percell )
 time$pseudotime <- round(time$pseudotime)
 time[is.na(time)] <- 0
 
@@ -246,9 +266,35 @@ d <- ggplot(df, aes(x = pseudotime)) +
   )
 d
 
-d | c | a | b
 
-#saveRDS(neurons, file = "/data/finalpaper/multiome_partIII.pseudotime_plots/neurons.rds")
+df <- time %>% 
+  group_by(pseudotime) %>% 
+  summarise(
+    mean = mean(Sum_gi_peaks),
+    se = sqrt(var(Sum_gi_peaks) / length(Sum_gi_peaks)),
+    mean_norm = mean(Sum_ORpromoter_peaks),
+    se_norm = sqrt(var(Sum_ORpromoter_peaks) / length(Sum_ORpromoter_peaks))
+  )
+
+e <- ggplot(df, aes(x = pseudotime)) + 
+  geom_line(aes(y = mean), colour = "black") +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), colour = "black") +
+  geom_line(aes(y = mean_norm*2.619), colour = "coral3") +
+  geom_errorbar(aes(ymin=(mean_norm*2.619)-(se_norm*2.619), ymax=(mean_norm*2.619)+(se_norm*2.619)), colour = "coral3") +
+  scale_y_continuous(
+    name = "Cummulative Greek Island Accessibility",
+    sec.axis = sec_axis(trans=~./2.619, name="Cummulative OR promoter Accessibility")
+  ) + 
+  theme_classic() + theme(
+    axis.title.y = element_text(color = "black"),
+    axis.title.y.right = element_text(color = "coral3")
+  )
+e
+
+e | d | c | a | b
+
+
+saveRDS(neurons, file = "/data/finalpaper_August2023/multiome_partIII.pseudotime_plots/neurons.rds")
 
 
 

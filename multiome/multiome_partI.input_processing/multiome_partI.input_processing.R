@@ -1,4 +1,4 @@
-# Integrating ATAC with scRNA-seq data https://satijalab.org/signac/articles/pbmc_vignette.html
+# Integrating ATAC with scRNA-seq data https://satijalab.org/signac/articles/moe_rna_II_vignette.html
 
 library(dplyr)
 library(tidyr)
@@ -64,24 +64,7 @@ moe <- subset(
 )
 moe
 
-
-# Before doing peak calling, you have to use Seurat
-# to cluster your cells and then assign cell types
-# to your data! This is important.
-
-### AT THIS TIME RUN SEURAT_CLUSTERING.R
-
-#celltypes <- moe_rna@active.ident
-#moe <- AddMetaData(object = moe,
-#                   metadata = celltypes,
-#                   col.name = "celltypes")
-#Idents(moe) <- "celltypes"
-
 # call peaks using MACS2
-#peaks <- CallPeaks(moe, 
-#                   macs2.path = "/usr/local/bin/macs2",
-#                   group.by = "celltypes")
-
 peaks <- CallPeaks(moe, 
                    macs2.path = "/usr/local/bin/macs2")
 
@@ -245,48 +228,143 @@ ggplot(fraction_accessibility_df, aes(x = type, y = fraction_acc)) +
   ylab("Percent accessibility \n per enhancer (%)") + 
   theme_classic()
 
-mean(gi_fraction_accessibility$fraction_acc)
-mean(link_fraction_accessibility$fraction_acc)
+##### ##### ##### ##### ##### 
+##### Length Normalized ##### 
+##### ##### ##### ##### ##### 
 
-t.test(link_fraction_accessibility$fraction_acc , gi_fraction_accessibility$fraction_acc)
+gi_fraction_accessibility_distnorm <- gi_fraction_accessibility %>%
+  separate(loc, sep = "-", into = c("chr", "loc1", "loc2")) %>%
+  mutate(length = as.numeric(loc2) - as.numeric(loc1)) %>% 
+  mutate(distnorm_fraction_acc = 1000*fraction_acc/length) 
 
-######################################################
-######################################################
-############### ATAC Tiling for cCREs ################ 
-######################################################
-######################################################
+link_fraction_accessibility_distnorm <- link_fraction_accessibility %>%
+  separate(loc, sep = "[.]", into = c("chr", "loc1", "loc2")) %>%
+  mutate(length = as.numeric(loc2) - as.numeric(loc1)) %>% 
+  mutate(distnorm_fraction_acc = 1000*fraction_acc/length) 
 
-DefaultAssay(mOSN_moe) <- "ATAC"
+fraction_accessibility_df_distnorm <- rbind(gi_fraction_accessibility_distnorm, link_fraction_accessibility_distnorm)
 
-#chr9-49880001-49885000 (boundaries are adjusted so that enhnacer is in center)
-tile_plot1 <- TilePlot(
-  object = mOSN_moe,
-  region = "chr9-49883700-49886300",
-  idents = 0,
-  tile.cells = 200
-)
-tile_plot1
+ggplot(df3, aes(x = type, y = distnorm_fraction_acc)) + 
+  geom_boxplot() + 
+  geom_jitter(alpha = 0.2) +
+  ylab("Percent accessibility \n per enhancer (%)") + 
+  theme_classic()
 
-#H
-tile_plot2 <- TilePlot(
-  object = mOSN_moe,
-  region = c("chr14-52546909-52549295"),
-  idents = 0,
-  tile.cells = 200,
-)
+gi_fraction_accessibility_distnorm %>%
+  group_by(type) %>%
+  summarise(mean = 100*mean(distnorm_fraction_acc),
+            sd = 100*sd(distnorm_fraction_acc),
+            n = n())
 
-#Lipsi
-tile_plot4 <- TilePlot(
-  object = mOSN_moe,
-  region = "chr2-37126864-37129314",
-  idents = 0,
-  tile.cells = 200,
-)
+link_fraction_accessibility_distnorm %>%
+  group_by(type) %>%
+  summarise(mean = 100*mean(distnorm_fraction_acc),
+            sd = 100*sd(distnorm_fraction_acc),
+            n = n())
 
-tile_plot1 + tile_plot2 + tile_plot4
+t.test(gi_fraction_accessibility_distnorm$distnorm_fraction_acc ,
+       link_fraction_accessibility_distnorm$distnorm_fraction_acc)
 
 
-#write.table(links_df, file = "/data/finalpaper/multiome_partI.input_processing/mOSN_cCREs.txt", sep = "\t")
-#saveRDS(moe, file = "/data/finalpaper/multiome_partI.input_processing/moe.rds")
-#saveRDS(mOSN_moe, file = "/data/finalpaper/multiome_partI.input_processing/mOSN_moe.rds")
+#write.table(links_df, file = "/data/finalpaper_August2023/multiome_partI.input_processing/mOSN_cCREs.txt", sep = "\t")
+#saveRDS(moe, file = "/data/finalpaper_August2023/multiome_partI.input_processing/moe.rds")
+#saveRDS(mOSN_moe, file = "/data/finalpaper_August2023/multiome_partI.input_processing/mOSN_moe.rds")
 
+
+########################
+########################
+### NATURE REVISIONS ###
+########################
+########################
+
+# Clustering MOE based off of RNA data alone
+
+# # Note that all operations below are performed on the RNA assay Set and verify that the
+# # default assay is RNA
+# DefaultAssay(moe_rna) <- "RNA"
+# DefaultAssay(moe_rna)
+# # perform visualization and clustering steps
+# moe_rna <- NormalizeData(moe_rna)
+# moe_rna <- FindVariableFeatures(moe_rna)
+# moe_rna <- ScaleData(moe_rna)
+# moe_rna <- RunPCA(moe_rna, verbose = FALSE)
+# moe_rna <- FindNeighbors(moe_rna, dims = 1:30)
+# moe_rna <- FindClusters(moe_rna, resolution = 0.8, verbose = FALSE)
+# moe_rna <- RunUMAP(moe_rna, dims = 1:30)
+# 
+# plot6 <- DimPlot(moe_rna, repel = TRUE, group.by = ident('seurat_clusters') ,label = TRUE) + NoLegend()
+# plot7 <- DimPlot(moe_rna, repel = TRUE, group.by = ident('wknn_res.0.4'), label = TRUE) + NoLegend()
+# plot8 <- DimPlot(moe, label = TRUE, repel = TRUE, group.by = ident('wknn_res.0.4'), reduction = "umap") + NoLegend() #UMAP projection of SCT/peak weighted nearest neighbor
+# plot6 + plot7 + plot8
+
+# TilePlots of all cCREs
+
+GIs_2000bp_df <- fraction_accessibility_df %>% 
+  dplyr::filter(type == "GIs") %>%
+  separate(loc, sep = "-", into = c("chr", "loc1", "loc2")) %>%
+  mutate(loc1 = as.numeric(loc1) - 1000,
+         loc2 = as.numeric(loc2) + 1000,
+         loc_spaced = paste(chr, loc1, loc2, sep="-")) %>%
+  dplyr::select(loc_spaced, type)
+
+links_2000bp_df <- fraction_accessibility_df %>% 
+  dplyr::filter(type == "links") %>%
+  separate(loc, sep = "[.]", into = c("chr", "loc1", "loc2")) %>%
+  mutate(loc1 = as.numeric(loc1) - 1000,
+         loc2 = as.numeric(loc2) + 1000,
+         loc_spaced = paste(chr, loc1, loc2, sep="-")) %>%
+  dplyr::select(loc_spaced, type)
+
+tileplot_GIs_fn <- function(loc){
+  tile_plot <- TilePlot(
+    object = mOSN_moe,
+    region = loc,
+    idents = 0,
+    tile.cells = 200
+  )
+  ggsave(paste("/data/finalpaper_revisions/multiome_partI.input_processing/GI_tileplots/", loc, ".pdf", sep = ""), tile_plot)
+  return(tile_plot)
+}
+
+tileplot_links_fn <- function(loc){
+  tile_plot <- TilePlot(
+    object = mOSN_moe,
+    region = loc,
+    idents = 0,
+    tile.cells = 200
+  )
+  ggsave(paste("/data/finalpaper_revisions/multiome_partI.input_processing/cCRE_tileplots/", loc, ".pdf", sep = ""), tile_plot)
+  return(tile_plot)
+}
+
+for (i in c(1:nrow(GIs_2000bp_df))){
+  tileplot_GIs_fn(as.character(GIs_2000bp_df[i,1]))
+}
+
+for (i in c(1:nrow(links_2000bp_df))){
+  tileplot_links_fn(as.character(links_2000bp_df[i,1]))
+}
+
+
+#### Adding OR promoter to Accessibility Boxpolot in mOSNs
+
+or_promoter_bed <- as.data.frame(read.table("/data/annotations/OR-xscript-Soria+UCSC.mm10.GeneID.300bp-promoter.bed",header = FALSE, sep="\t",stringsAsFactors=FALSE)) %>%
+  mutate(loc = paste(V1, V2, V3, sep = "-")) %>%
+  dplyr::select(loc)
+
+or_promoter_fraction_accessibility <- fraction_accessibility(or_promoter_bed)
+or_promoter_fraction_accessibility$type <- "or_promoters"
+
+fraction_accessibility_df <- rbind(gi_fraction_accessibility, link_fraction_accessibility, or_promoter_fraction_accessibility)
+fraction_accessibility_df$type <- factor(fraction_accessibility_df$type, levels = c("links", "GIs", "or_promoters"))
+
+ggplot(fraction_accessibility_df, aes(x = type, y = fraction_acc)) + 
+  geom_boxplot() + 
+  geom_jitter(alpha = 0.2) +
+  ylab("Percent accessibility \n per site (%)") + 
+  theme_classic()
+
+fraction_accessibility_df %>% head()
+fraction_accessibility_df %>% group_by(type) %>%
+  summarise(mean = mean(fraction_acc)*100,
+            sd = sd(fraction_acc)*100)
