@@ -81,3 +81,12 @@ b <- ggplot(df2, aes(y = ordering, x = 0, fill = as.character(chr))) +
 b + a + plot_layout(guides = "collect", widths = c(1, 10))
 
 
+####
+
+supplementary_file <- df2 %>%
+  dplyr::rename('Greek_Island' = 'ordering')
+
+write.table(supplementary_file, file = '/data/finalpaper_August2023/multiome_partIV.accessibility_perGI_tileplot/Fig1e_AccessibilityPerGIoverPseudotime.txt', 
+            sep = '\t', col.names = TRUE)
+
+

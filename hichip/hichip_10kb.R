@@ -22,7 +22,7 @@ library(patchwork)
 # set directory to current directory
 # this directory should contain all files in the GitHub folder
 
-working_directory <- "/media/storageE/ariel/R/finalpaper_finalized/hichip/"
+working_directory <- "/media/storageE/ariel/R/finalpaper_August2023/hichip"
 setwd(working_directory) 
 
 `%notin%` <- Negate(`%in%`)
@@ -35,7 +35,7 @@ setwd(working_directory)
 ## Juicer Merged Files with KR Normalization ##
 options(scipen = 999)
 
-dump_dir <- working_directory
+dump_dir <- '/media/storageD/distiller/dump/'
 bin_size <- 10000
 
 bed_to_prey <- function(x) {
@@ -61,10 +61,10 @@ gg8.p2.ctrl.IF.trans_hic_path <-format_trans_path(gg8.p2.ctrl.IF.name)
 gg8.p2.ctrl.IF.cis_hic_path <-format_cis_path(gg8.p2.ctrl.IF.name)
 gg8.p2.ctrl.IF.total_count <- 362670259
 
-gg8tta.tetop2.h27ac.HiChIP.IP.name <- "gg8tTAtetOP2.H3K27ac.HiChIP.AP151.AP152"
+gg8tta.tetop2.h27ac.HiChIP.IP.name <- "gg8tTAtetOP2.H3K27ac.HiChIP.AP151.AP152_230921"
 gg8tta.tetop2.h27ac.HiChIP.IP.trans_hic_path <-format_trans_path(gg8tta.tetop2.h27ac.HiChIP.IP.name)
 gg8tta.tetop2.h27ac.HiChIP.IP.cis_hic_path <-format_cis_path(gg8tta.tetop2.h27ac.HiChIP.IP.name)
-gg8tta.tetop2.h27ac.HiChIP.IP.total_count <- 332494243
+gg8tta.tetop2.h27ac.HiChIP.IP.total_count <- 298853841
 
 # All Bins ... Juicer KR Normalized Merged Files
 
@@ -87,7 +87,6 @@ total_count <- c(gg8.p2.ctrl.IF.total_count,
 #### therefore need to be filtered
 #### to load the whole thing into R
 ###################################
-
 # Two MB Island Filter
 
 options(scipen = 999)
@@ -109,27 +108,21 @@ Islands <- Bins.And.Islands[complete.cases(Bins.And.Islands),]
 
 ## Filter out Islands within 2 MB of an Island ##
 
+TwoMB.Islands = data.frame()
 for (i in seq_along(Islands[,1])) {
-  if (i == 1) {
-    df <- Bins.And.Islands %>% filter(Bins.And.Islands$prey_chr == Islands$prey_chr[i]) %>%
-      filter((prey_loc > (Islands$prey_loc[i] - 1e6)) & (prey_loc < (Islands$prey_loc[i] + 1e6)))
-    df$name <- Islands$type[i]
-    df$order <- c(1:nrow(df))
-    TwoMB.Islands <- df
-  } else {
-    tryCatch({
-      df.loop <- Bins.And.Islands %>% filter(Bins.And.Islands$prey_chr == Islands$prey_chr[i]) %>%
-        filter((prey_loc > (Islands$prey_loc[i] - 1e6)) & (prey_loc < (Islands$prey_loc[i] + 1e6)))
-      df.loop$name <- Islands$type[i]
-      df.loop$order <- c(1:nrow(df.loop))
-      TwoMB.Islands.loop <- df.loop
-      TwoMB.Islands <- rbind(TwoMB.Islands, TwoMB.Islands.loop)
-    }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-  }
+  df <- Bins.And.Islands %>% filter(Bins.And.Islands$prey_chr == Islands$prey_chr[i]) %>%
+    filter((prey_loc > (Islands$prey_loc[i] - 1e6)) & (prey_loc < (Islands$prey_loc[i] + 1e6)))
+  df$name <- Islands$type[i]
+  df$order <- c(1:nrow(df))
+  TwoMB.Islands <- rbind(TwoMB.Islands, df)
 }
 
 TwoMB.Islands$prey <- paste(TwoMB.Islands$prey_chr, TwoMB.Islands$prey_loc, sep = "_")
 TwoMB.Islands <- TwoMB.Islands %>% dplyr::select(prey_chr, prey_loc, type, name, order, prey)
+
+# Confirm that all Island 2-Mb window are within borders of genome
+TwoMB.Islands %>% select(prey) %>% nrow()
+TwoMB.Islands %>% dplyr::filter(prey %in% All_Bins_prey$prey) %>% select(prey) %>% nrow()
 
 
 # ## ## ## ## ## ## 
@@ -137,9 +130,6 @@ TwoMB.Islands <- TwoMB.Islands %>% dplyr::select(prey_chr, prey_loc, type, name,
 ## ## ## ## ## ## # 
 
 # Two MB OR Filter
-
-options(scipen = 999)
-All_Bins_prey <- bed_to_prey("mm10_assembled.10kb.bed")
 
 OR_Clusters_10kb <- read.table("ORs-by-cluster.bed") %>%
   mutate(chr = V1, loc = (floor(V3/bin_size))*bin_size, cluster = V5, or = V4) %>%
@@ -158,35 +148,28 @@ ORs <- Bins.And.ORs[complete.cases(Bins.And.ORs),]
 
 ## Filter out ORs within 2 MB of an OR ##
 
+TwoMB.ORs = data.frame()
 for (i in seq_along(ORs[,1])) {
-  if (i == 1) {
-    df <- Bins.And.ORs %>% filter(Bins.And.ORs$prey_chr == ORs$prey_chr[i]) %>%
-      filter((prey_loc > (ORs$prey_loc[i] - 1e6)) & (prey_loc < (ORs$prey_loc[i] + 1e6)))
-    df$name <- ORs$type[i]
-    df$order <- c(1:nrow(df))
-    TwoMB.ORs <- df
-  } else {
-    tryCatch({
-      df.loop <- Bins.And.ORs %>% filter(Bins.And.ORs$prey_chr == ORs$prey_chr[i]) %>%
-        filter((prey_loc > (ORs$prey_loc[i] - 1e6)) & (prey_loc < (ORs$prey_loc[i] + 1e6)))
-      df.loop$name <- ORs$type[i]
-      df.loop$order <- c(1:nrow(df.loop))
-      TwoMB.ORs.loop <- df.loop
-      TwoMB.ORs <- rbind(TwoMB.ORs, TwoMB.ORs.loop)
-    }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-  }
+  df <- Bins.And.ORs %>% filter(Bins.And.ORs$prey_chr == ORs$prey_chr[i]) %>%
+    filter((prey_loc > (ORs$prey_loc[i] - 1e6)) & (prey_loc < (ORs$prey_loc[i] + 1e6)))
+  df$name <- ORs$type[i]
+  df$order <- c(1:nrow(df))
+  TwoMB.ORs <- rbind(TwoMB.ORs, df)
 }
 
-TwoMB.ORs$prey <- paste(TwoMB.ORs$prey_chr, TwoMB.ORs$prey_loc, sep = "_")
-TwoMB.ORs <- TwoMB.ORs %>% dplyr::select(prey_chr, prey_loc, type, name, order, prey)
 
 TwoMB.ORs$prey <- paste(TwoMB.ORs$prey_chr, TwoMB.ORs$prey_loc, sep = "_")
 TwoMB.ORs <- TwoMB.ORs %>% dplyr::select(prey_chr, prey_loc, type, name, order, prey)
+
+# Confirm that all Island 2-Mb window are within borders of genome
+TwoMB.ORs %>% select(prey) %>% nrow()
+TwoMB.ORs %>% dplyr::filter(prey %in% All_Bins_prey$prey) %>% select(prey) %>% nrow()
 
 ### The filter that I am creating includes all the OR Clusters as well as 2-MB around each Island
 
 filter <- rbind(TwoMB.Islands, TwoMB.ORs) %>% dplyr::select(prey) %>% unique()
 
+hic_contacts = data.frame()
 for (i in c(1:2)) {
   trans_all = fread(trans_hic_path[i], col.names = c("bait", "prey", "contact"))
   trans_all$arch = 'trans'
@@ -199,26 +182,15 @@ for (i in c(1:2)) {
   cis_short$arch = 'cis_short'
   cis_long <- filter(cis_all, cis_all$bait != cis_all$prey)
   cis_long$arch = 'cis_long'
-  if (i == 1) {
-    hic_contacts <- rbind(trans_all, cis_short, cis_long)
-    hic_contacts$geno <- print(libraries[i])
-    hic_contacts[is.na(hic_contacts)] <- 0
-    #totalcount <- hic_contacts %>% group_by(geno) %>% summarise(sum = sum(contact)) # You should *DE-activate* this when you ARE FILTERING
-    #hic_contacts$norm <- hic_contacts$contact/totalcount$sum # You should *DE-activate* this when you ARE FILTERING
-    hic_contacts$norm <- hic_contacts$contact/total_count[i] # You should activate this when you *ARE* FILTERING
-    hic_contacts <- select(hic_contacts, -contact)
-    rm(trans_all, cis_short, cis_long, cis_all)
-  } else {
-    hic_contacts_loop <- rbind(trans_all, cis_short, cis_long)
-    hic_contacts_loop$geno <- print(libraries[i])
-    hic_contacts_loop[is.na(hic_contacts_loop)] <- 0
-    #totalcount <- hic_contacts_loop %>% group_by(geno) %>% summarise(sum = sum(contact)) # You should activate this when you ARE NOT FILTERING
-    #hic_contacts_loop$norm <- hic_contacts_loop$contact/totalcount$sum # You should activate this when you ARE NOT FILTERING
-    hic_contacts_loop$norm <- hic_contacts_loop$contact/total_count[i] # You should activate this when you *ARE* FILTERING
-    hic_contacts_loop <- select(hic_contacts_loop, -contact)
-    hic_contacts <- rbind(hic_contacts, hic_contacts_loop)
-    rm(trans_all, cis_short, cis_long, cis_all, hic_contacts_loop)
-  }
+  hic_contacts_loop <- rbind(trans_all, cis_short, cis_long)
+  hic_contacts_loop$geno <- print(libraries[i])
+  hic_contacts_loop[is.na(hic_contacts_loop)] <- 0
+  #totalcount <- hic_contacts_loop %>% group_by(geno) %>% summarise(sum = sum(contact)) # You should activate this when you ARE NOT FILTERING
+  #hic_contacts_loop$norm <- hic_contacts_loop$contact/totalcount$sum # You should activate this when you ARE NOT FILTERING
+  hic_contacts_loop$norm <- hic_contacts_loop$contact/total_count[i] # You should activate this when you *ARE* FILTERING
+  hic_contacts_loop <- select(hic_contacts_loop, -contact)
+  hic_contacts <- rbind(hic_contacts, hic_contacts_loop)
+  rm(trans_all, cis_short, cis_long, cis_all, hic_contacts_loop)
 }
 
 ##############################################################################
@@ -232,6 +204,22 @@ for (i in c(1:2)) {
 # Single Island-to-Island Contacts #
 # Must be done at Ten-KB resolution
 
+Islands_10kb_trans_combinations <- expand.grid(Islands_10kb$prey, Islands_10kb$prey) %>%
+  dplyr::rename("bait" = "Var1", "prey" = "Var2") %>%
+  separate(bait, sep = "_", into = c("bait_chr", "bait_loc")) %>%
+  separate(prey, sep = "_", into = c("prey_chr", "prey_loc")) %>%
+  dplyr::filter(bait_chr != "X",
+                prey_chr != "X") %>%
+  mutate(bait_chr = as.numeric(bait_chr),
+         prey_chr = as.numeric(prey_chr)) %>%
+  mutate(arch = case_when(bait_chr == prey_chr ~ 'cis',
+                          bait_chr != prey_chr ~ 'trans')) %>%
+  dplyr::filter(arch == 'trans') %>%
+  mutate(bait = paste(bait_chr, bait_loc, sep = "_"),
+         prey = paste(prey_chr, prey_loc, sep = "_")) %>%
+  dplyr::select(bait, prey, arch)
+
+
 island_to_island_hichip <- hic_contacts %>%
   filter(bait %in% Islands_10kb$prey, 
          prey %in% Islands_10kb$prey, 
@@ -239,8 +227,16 @@ island_to_island_hichip <- hic_contacts %>%
          bait != prey,
          geno == "gg8tta.tetop2.h27ac.HiChIP.IP") %>%
   mutate(norm = norm*1e9) %>%
-  dcast(bait ~ prey, value.var = "norm")
+  dplyr::select(!geno)
+
+island_to_island_hichip <- left_join(Islands_10kb_trans_combinations, 
+                                     island_to_island_hichip, 
+                                     by = c("bait", "prey", "arch"))
 island_to_island_hichip[is.na(island_to_island_hichip)] <- 0
+island_to_island_hichip <- island_to_island_hichip %>% dcast(bait ~ prey, value.var = "norm")
+island_to_island_hichip[is.na(island_to_island_hichip)] <- 0
+
+
 
 island_to_island_hic <- hic_contacts %>%
   filter(bait %in% Islands_10kb$prey, 
@@ -249,7 +245,13 @@ island_to_island_hic <- hic_contacts %>%
          bait != prey,
          geno == "gg8.p2.ctrl.IF") %>%
   mutate(norm = norm*1e9) %>%
-  dcast(bait ~ prey, value.var = "norm")
+  dplyr::select(!geno)
+
+island_to_island_hic <- left_join(Islands_10kb_trans_combinations, 
+                                     island_to_island_hic, 
+                                     by = c("bait", "prey", "arch"))
+island_to_island_hic[is.na(island_to_island_hic)] <- 0
+island_to_island_hic <- island_to_island_hic %>% dcast(bait ~ prey, value.var = "norm")
 island_to_island_hic[is.na(island_to_island_hic)] <- 0
 
 
@@ -282,6 +284,9 @@ b <- pheatmap(island_to_island_hichip[,-1],
               col = myColor,
               cellheight=3, cellwidth = 3,
               breaks = myBreaks)
+
+sum(island_to_island_hic[,-1])
+sum(island_to_island_hichip[,-1])
 
 grid.arrange(a[[4]], b[[4]],ncol = 2)
 
@@ -383,3 +388,20 @@ island_to_island%>%
   summarise(mean = mean(sum_norm),
             sd = sd(sum_norm),
             n = n())
+
+
+########## Formatting ########## 
+
+island_to_activeOR$category <- "active OR to GIs"
+island_to_inactiveORs$category <- "inactive OR to GIs"
+island_to_island$category <- "GIs to GIs"
+
+islandSupplement <- rbind(island_to_activeOR,island_to_inactiveORs,  island_to_island)
+
+write.table(islandSupplement, file = "/media/storageE/ariel/R/finalpaper_August2023/hichip/SuppFig7efg_HiChIP10kb.txt", sep = "\t")
+
+
+
+
+
+

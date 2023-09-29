@@ -244,7 +244,7 @@ link_fraction_accessibility_distnorm <- link_fraction_accessibility %>%
 
 fraction_accessibility_df_distnorm <- rbind(gi_fraction_accessibility_distnorm, link_fraction_accessibility_distnorm)
 
-ggplot(df3, aes(x = type, y = distnorm_fraction_acc)) + 
+ggplot(fraction_accessibility_df_distnorm, aes(x = type, y = distnorm_fraction_acc)) + 
   geom_boxplot() + 
   geom_jitter(alpha = 0.2) +
   ylab("Percent accessibility \n per enhancer (%)") + 
@@ -368,3 +368,11 @@ fraction_accessibility_df %>% head()
 fraction_accessibility_df %>% group_by(type) %>%
   summarise(mean = mean(fraction_acc)*100,
             sd = sd(fraction_acc)*100)
+
+supplementary_file <- fraction_accessibility_df %>%
+  mutate(type = case_when(type == 'links' ~ 'mOSN_cCRE',
+                          type == 'GIs' ~ 'Greek_Island',
+                          type == 'or_promoters' ~ 'OR_promoter'))
+
+write.table(supplementary_file, file = '/data/finalpaper_August2023/multiome_partI.input_processing/Fig1k_AccessibilityBoxPlots.txt', 
+            sep = '\t', col.names = TRUE)

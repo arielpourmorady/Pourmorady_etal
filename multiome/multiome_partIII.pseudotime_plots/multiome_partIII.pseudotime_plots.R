@@ -294,7 +294,26 @@ e
 e | d | c | a | b
 
 
-saveRDS(neurons, file = "/data/finalpaper_August2023/multiome_partIII.pseudotime_plots/neurons.rds")
+#saveRDS(neurons, file = "/data/finalpaper_August2023/multiome_partIII.pseudotime_plots/neurons.rds")
 
+supplementary_file <- time %>%
+  dplyr::select(pseudotime, Sum_gi_peaks, Sum_ORpromoter_peaks, 
+                ORtranscript, Acc_perEnh_percell_gi_peaks, Sum_mOSN_cCREs_peaks, Sum_lhx2_ebf_peaks) %>%
+  group_by(pseudotime) %>% 
+  summarise(
+    Cumulative_GI_Accessibility_avg = mean(Sum_gi_peaks),
+    Cumulative_GI_Accessibility_se = sqrt(var(Sum_gi_peaks)/length(Sum_gi_peaks)),
+    Cumulative_ORPromoter_Accessibility_avg = mean(Sum_ORpromoter_peaks),
+    Cumulative_ORPromoter_Accessibility_se = sqrt(var(Sum_ORpromoter_peaks)/length(Sum_ORpromoter_peaks)),
+    Max_ORtranscript_SCT_avg = mean(ORtranscript),
+    Max_ORtranscript_SCT_se = sqrt(var(ORtranscript)/length(ORtranscript)),
+    Active_GI_Accessibility_avg = mean(Acc_perEnh_percell_gi_peaks),
+    Active_GI_Accessibility_se = sqrt(var(Acc_perEnh_percell_gi_peaks)/length(Acc_perEnh_percell_gi_peaks)),
+    Cumulative_mOSNcCRE_Accessibility_avg = mean(Sum_mOSN_cCREs_peaks),
+    Cumulative_mOSNcCRE_Accessibility_se = sqrt(var(Sum_mOSN_cCREs_peaks)/length(Sum_mOSN_cCREs_peaks)),
+    Cumulative_Lhx2Ebf_Accessibility_avg = mean(Sum_lhx2_ebf_peaks),
+    Cumulative_Lhx2Ebf_Accessibility_se = sqrt(var(Sum_lhx2_ebf_peaks)/length(Sum_lhx2_ebf_peaks))
+  )
 
-
+write.table(supplementary_file, file = '/data/finalpaper_August2023/multiome_partIII.pseudotime_plots/Fig1d_1f_1g_1h_1i_1j_PseudotimePlots.txt', 
+            sep = '\t', col.names = TRUE)

@@ -69,7 +69,6 @@ moe <- AddMetaData(
 
 # Visualising
 
-
 neurons <- subset(moe, idents = c(0, 4, 10))
 
 plot1 <- DimPlot(neurons, label = TRUE, repel = TRUE, reduction = "umap") + NoLegend() + xlim (c(-10, 5)) + ylim (c(-13, -1))
@@ -139,6 +138,9 @@ df$Gap43_se <- df$Gap43_se/(max(df$Gap43_mean))
 df$Carns1_mean <- df$Carns1_mean/(max(df$Carns1_mean))
 df$Carns1_se <- df$Carns1_se/(max(df$Carns1_mean))
 
+write.table(df, file = '/data/finalpaper_August2023/multiome_partII.pseudotime_projection/Fig1c_MarkerGenesOverPseudotime.txt', 
+            sep = '\t', col.names = TRUE)
+
 ggplot(df, aes(x = pseudotime)) + 
   geom_line(aes(y = Ascl1_mean), colour = "red1") +
   geom_errorbar(aes(ymin=Ascl1_mean-Ascl1_se, ymax=Ascl1_mean+Ascl1_se), colour = "red1") +
@@ -159,30 +161,30 @@ ggplot(df, aes(x = pseudotime)) +
 ###########################################################
 ###########################################################
 
-cells <- Cells(rna)
-Lhx2 <- rna[rna@Dimnames[[1]] == "Lhx2"]
-
-df2 <- data.frame(cells, Lhx2)
-df2 <- df2 %>% remove_rownames %>% column_to_rownames(var="cells")
-
-time <- metadata %>% dplyr::select(pseudotime)
-time$pseudotime <- round(time$pseudotime)
-time[is.na(time)] <- 0
-time <- merge(time, df2, by = "row.names")
-
-df <- time %>% 
-  group_by(pseudotime) %>% 
-  summarise(
-    Lhx2_mean = mean(Lhx2),
-    Lhx2_se = sqrt(var(Lhx2) / length(Lhx2))
-  )
-
-df$Lhx2_mean <- df$Lhx2_mean/(max(df$Lhx2_mean))
-df$Lhx2_se <- df$Lhx2_se/(max(df$Lhx2_mean))
-
-ggplot(df, aes(x = pseudotime)) + 
-  geom_line(aes(y = Lhx2_mean), colour = "red1") +
-  geom_errorbar(aes(ymin=Lhx2_mean-Lhx2_se, ymax=Lhx2_mean+Lhx2_se), colour = "red1") +
-  theme_light() + theme(element_blank()) + ylab("Norm Exp")
+# cells <- Cells(rna)
+# Lhx2 <- rna[rna@Dimnames[[1]] == "Lhx2"]
+# 
+# df2 <- data.frame(cells, Lhx2)
+# df2 <- df2 %>% remove_rownames %>% column_to_rownames(var="cells")
+# 
+# time <- metadata %>% dplyr::select(pseudotime)
+# time$pseudotime <- round(time$pseudotime)
+# time[is.na(time)] <- 0
+# time <- merge(time, df2, by = "row.names")
+# 
+# df <- time %>% 
+#   group_by(pseudotime) %>% 
+#   summarise(
+#     Lhx2_mean = mean(Lhx2),
+#     Lhx2_se = sqrt(var(Lhx2) / length(Lhx2))
+#   )
+# 
+# df$Lhx2_mean <- df$Lhx2_mean/(max(df$Lhx2_mean))
+# df$Lhx2_se <- df$Lhx2_se/(max(df$Lhx2_mean))
+# 
+# ggplot(df, aes(x = pseudotime)) + 
+#   geom_line(aes(y = Lhx2_mean), colour = "red1") +
+#   geom_errorbar(aes(ymin=Lhx2_mean-Lhx2_se, ymax=Lhx2_mean+Lhx2_se), colour = "red1") +
+#   theme_light() + theme(element_blank()) + ylab("Norm Exp")
 
 #saveRDS(neurons, file = "/data/finalpaper/multiome_partII.pseudotime_projection/neurons.rds")

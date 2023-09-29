@@ -21,7 +21,7 @@ library(patchwork)
 # set directory to current directory
 # this directory should contain all files in the GitHub folder
 
-working_directory <- "/media/storageE/ariel/R/finalpaper_finalized/liquidhic/liquid.hic.LOS/"
+working_directory <- "/media/storageE/ariel/R/finalpaper_August2023/liquidhic/liquid.hic.LOS/"
 setwd(working_directory) 
 
 `%notin%` <- Negate(`%in%`)
@@ -71,10 +71,10 @@ gg8.p2.60m.trans_hic_path <-format_trans_path(gg8.p2.60m.name)
 gg8.p2.60m.cis_hic_path <-format_cis_path(gg8.p2.60m.name)
 gg8.p2.60m.total_count <- 200315002
 
-gg8tta.tetop2.h27ac.HiChIP.IP.name <- "gg8tTAtetOP2.H3K27ac.HiChIP.AP151.AP152"
+gg8tta.tetop2.h27ac.HiChIP.IP.name <- "gg8tTAtetOP2.H3K27ac.HiChIP.AP151.AP152_230921"
 gg8tta.tetop2.h27ac.HiChIP.IP.trans_hic_path <-format_trans_path(gg8tta.tetop2.h27ac.HiChIP.IP.name)
 gg8tta.tetop2.h27ac.HiChIP.IP.cis_hic_path <-format_cis_path(gg8tta.tetop2.h27ac.HiChIP.IP.name)
-gg8tta.tetop2.h27ac.HiChIP.IP.total_count <- 332494243
+gg8tta.tetop2.h27ac.HiChIP.IP.total_count <- 298853841
 
 ## ESTABLISH BINS ##
 
@@ -132,115 +132,91 @@ total_count <- c(gg8.p2.ctrl.total_count,
 #### to load the whole thing into R
 ###################################
 
+hic_contacts = data.frame()
 for (i in c(1:5)) {
   cis_all = fread(cis_hic_path[i], col.names = c("bait", "prey", "contact")) 
   cis_short <- filter(cis_all, cis_all$bait == cis_all$prey)
   cis_short$arch = 'cis_short'
   cis_long <- filter(cis_all, cis_all$bait != cis_all$prey)
   cis_long$arch = 'cis_long'
-  if (i == 1) {
-    hic_contacts <- rbind(cis_short, cis_long)
-    hic_contacts$geno <- print(libraries[i])
-    hic_contacts[is.na(hic_contacts)] <- 0
-    totalcount <- hic_contacts %>% group_by(geno) %>% summarise(sum = sum(contact)) # You should *DE-activate* this when you ARE FILTERING
-    hic_contacts$norm <- hic_contacts$contact/totalcount$sum # You should *DE-activate* this when you ARE FILTERING
-    hic_contacts <- select(hic_contacts, -contact)
-    rm(cis_short, cis_long, cis_all)
-  } else {
-    hic_contacts_loop <- rbind(cis_short, cis_long)
-    hic_contacts_loop$geno <- print(libraries[i])
-    hic_contacts_loop[is.na(hic_contacts_loop)] <- 0
-    totalcount <- hic_contacts_loop %>% group_by(geno) %>% summarise(sum = sum(contact)) # You should activate this when you ARE NOT FILTERING
-    hic_contacts_loop$norm <- hic_contacts_loop$contact/totalcount$sum # You should activate this when you ARE NOT FILTERING
-    hic_contacts_loop <- select(hic_contacts_loop, -contact)
-    hic_contacts <- rbind(hic_contacts, hic_contacts_loop)
-    rm(cis_short, cis_long, cis_all, hic_contacts_loop)
-  }
+  hic_contacts_loop <- rbind(cis_short, cis_long)
+  hic_contacts_loop$geno <- print(libraries[i])
+  hic_contacts_loop[is.na(hic_contacts_loop)] <- 0
+  totalcount <- hic_contacts_loop %>% group_by(geno) %>% summarise(sum = sum(contact)) # You should activate this when you ARE NOT FILTERING
+  hic_contacts_loop$norm <- hic_contacts_loop$contact/totalcount$sum # You should activate this when you ARE NOT FILTERING
+  hic_contacts_loop <- select(hic_contacts_loop, -contact)
+  hic_contacts <- rbind(hic_contacts, hic_contacts_loop)
+  rm(cis_short, cis_long, cis_all, hic_contacts_loop)
 }
 
 
 
 # Eigen vs LOS gg8-tTA TETOP2 HET
 
-control <- hic_contacts %>% filter(geno == "gg8.p2.ctrl")
-control <- control[!grep("12_", control$bait), ]
-control <- control[grep("2_", control$bait), ]
+## Relevant Bins
 
-control.LOS <-  control %>%
-  tidyr::separate('bait', into = c('bait_chr','bait_loc'), sep = '_', remove = F) %>% #split bait into chr and loc
-  tidyr::separate('prey', into = c('prey_chr','prey_loc'), sep = '_') %>%
-  mutate_at(.vars = vars(matches('loc')), .funs = as.numeric) %>% #convert "loc" column to numeric
-  filter((prey_loc > (bait_loc-3e6)) & (prey_loc < (bait_loc+3e6))) %>% #require prey loc within 3Mb
-  group_by(bait) %>% #group appropriate prey_locs by bait
-  summarize('total_contacts' = sum(norm)) %>% #summarize
-  mutate('contact_contacts' = total_contacts/(control %>% select(norm) %>% colSums()))
+chr2_bins_bait <- dplyr::filter(All_Bins_bait, grepl("2_",bait))
+chr2_bins_bait <- dplyr::filter(chr2_bins_bait, !grepl("12_",bait))
+chr2_bins_bait <- chr2_bins_bait %>%
+  tidyr::separate('bait', into = c('bait_chr','bait_loc'), sep = '_', remove = F) %>%
+  mutate(bait_loc = as.numeric(bait_loc)) 
+chr2_bins_bait_filter <- chr2_bins_bait %>%
+  dplyr::filter(bait_loc > 3e6, bait_loc < (182100000 - 3e6))
 
-Five.Min <- hic_contacts %>% filter(geno == "gg8.p2.5m")
-Five.Min <- Five.Min[!grep("12_", Five.Min$bait), ]
-Five.Min <- Five.Min[grep("2_", Five.Min$bait), ]
+chr2_bins_bait_filter_downsample <- sample_n(chr2_bins_bait_filter, 50)
 
-Five.Min.LOS <-  Five.Min %>%
-  tidyr::separate('bait', into = c('bait_chr','bait_loc'), sep = '_', remove = F) %>% #split bait into chr and loc
-  tidyr::separate('prey', into = c('prey_chr','prey_loc'), sep = '_') %>%
-  mutate_at(.vars = vars(matches('loc')), .funs = as.numeric) %>% #convert "loc" column to numeric
-  filter((prey_loc > (bait_loc-3e6)) & (prey_loc < (bait_loc+3e6))) %>% #require prey loc within 3Mb
-  group_by(bait) %>% #group appropriate prey_locs by bait
-  summarize('total_contacts' = sum(norm)) %>% #summarize
-  mutate('contact_contacts' = total_contacts/(Five.Min %>% select(norm) %>% colSums()))
+LOS_function <- function(hic_data){
+  master_df = data.frame()
+  for(i in chr2_bins_bait_filter$bait){
+    loc <- strsplit(i, split = "_")
+    loc <- as.numeric(loc[[1]][2])
+    df <- hic_data
+    df <- df %>% filter(bait == i) %>%
+      tidyr::separate('bait', into = c('bait_chr','bait_loc'), sep = '_', remove = F) %>%
+      tidyr::separate('prey', into = c('prey_chr','prey_loc'), sep = '_', remove = F) %>%
+      mutate(bait_loc = as.numeric(bait_loc), prey_loc = as.numeric(prey_loc))
+    df_filt <- df %>%
+      filter(prey_loc > (loc - 3e6), prey_loc < (loc + 3e6)) %>%
+      group_by(bait) %>% summarise(near_norm = sum(norm)) %>%
+      dplyr::mutate(fraction_norm = near_norm/sum(df$norm))
+    master_df <- rbind(master_df, df_filt)
+  }
+  return(master_df)
+}
 
-Thirty.Min <- hic_contacts %>% filter(geno == "gg8.p2.30m")
-Thirty.Min <- Thirty.Min[!grep("12_", Thirty.Min$bait), ]
-Thirty.Min <- Thirty.Min[grep("2_", Thirty.Min$bait), ]
+###########
+control <- hic_contacts %>% filter(geno == "gg8.p2.ctrl", bait %in% chr2_bins_bait$bait)
+Five.Min <- hic_contacts %>% filter(geno == "gg8.p2.5m", bait %in% chr2_bins_bait$bait)
+Thirty.Min <- hic_contacts %>% filter(geno == "gg8.p2.30m", bait %in% chr2_bins_bait$bait)
+Sixty.Min <- hic_contacts %>% filter(geno == "gg8.p2.60m", bait %in% chr2_bins_bait$bait)
 
-Thirty.Min.LOS <-  Thirty.Min %>%
-  tidyr::separate('bait', into = c('bait_chr','bait_loc'), sep = '_', remove = F) %>% #split bait into chr and loc
-  tidyr::separate('prey', into = c('prey_chr','prey_loc'), sep = '_') %>%
-  mutate_at(.vars = vars(matches('loc')), .funs = as.numeric) %>% #convert "loc" column to numeric
-  filter((prey_loc > (bait_loc-3e6)) & (prey_loc < (bait_loc+3e6))) %>% #require prey loc within 3Mb
-  group_by(bait) %>% #group appropriate prey_locs by bait
-  summarize('total_contacts' = sum(norm)) %>% #summarize
-  mutate('contact_contacts' = total_contacts/(Thirty.Min %>% select(norm) %>% colSums()))
-
-Sixty.Min <- hic_contacts %>% filter(geno == "gg8.p2.60m")
-Sixty.Min <- Sixty.Min[!grep("12_", Sixty.Min$bait), ]
-Sixty.Min <- Sixty.Min[grep("2_", Sixty.Min$bait), ]
-
-Sixty.Min.LOS <-  Sixty.Min %>%
-  tidyr::separate('bait', into = c('bait_chr','bait_loc'), sep = '_', remove = F) %>% #split bait into chr and loc
-  tidyr::separate('prey', into = c('prey_chr','prey_loc'), sep = '_') %>%
-  mutate_at(.vars = vars(matches('loc')), .funs = as.numeric) %>% #convert "loc" column to numeric
-  filter((prey_loc > (bait_loc-3e6)) & (prey_loc < (bait_loc+3e6))) %>% #require prey loc within 3Mb
-  group_by(bait) %>% #group appropriate prey_locs by bait
-  summarize('total_contacts' = sum(norm)) %>% #summarize
-  mutate('contact_contacts' = total_contacts/(Sixty.Min %>% select(norm) %>% colSums()))
+control.LOS <- LOS_function(control)
+Five.Min.LOS <- LOS_function(Five.Min)
+Thirty.Min.LOS <- LOS_function(Thirty.Min)
+Sixty.Min.LOS <- LOS_function(Sixty.Min)
 
 LOS.5min <- merge(control.LOS, Five.Min.LOS, by = "bait")
-LOS.5min$LOS <- (LOS.5min$contact_contacts.x - LOS.5min$contact_contacts.y)/LOS.5min$contact_contacts.x
+LOS.5min$LOS <- (LOS.5min$fraction_norm.x - LOS.5min$fraction_norm.y)/LOS.5min$fraction_norm.x
 
 LOS.30min <- merge(control.LOS, Thirty.Min.LOS, by = "bait")
-LOS.30min$LOS <- (LOS.30min$contact_contacts.x - LOS.30min$contact_contacts.y)/LOS.30min$contact_contacts.x
+LOS.30min$LOS <- (LOS.30min$fraction_norm.x - LOS.30min$fraction_norm.y)/LOS.30min$fraction_norm.x
 
 LOS.60min <- merge(control.LOS, Sixty.Min.LOS, by = "bait")
-LOS.60min$LOS <- (LOS.60min$contact_contacts.x - LOS.60min$contact_contacts.y)/LOS.60min$contact_contacts.x
+LOS.60min$LOS <- (LOS.60min$fraction_norm.x - LOS.60min$fraction_norm.y)/LOS.60min$fraction_norm.x
 
 # HiChIP Enrichment
 
-gg8.p2.hichip_df <- hic_contacts %>%
+gg8.p2.hichip_df_chr2 <- hic_contacts %>%
   filter(geno == "gg8.p2.hichip") %>%
   group_by(bait) %>%
-  summarise(norm = sum(norm))
-gg8.p2.hichip_df_chr2 <- gg8.p2.hichip_df[grep("2_", gg8.p2.hichip_df$bait), ]
-gg8.p2.hichip_df_chr12 <- gg8.p2.hichip_df[grep("12_", gg8.p2.hichip_df$bait),]
-gg8.p2.hichip_df_chr2 <- anti_join(gg8.p2.hichip_df_chr2, gg8.p2.hichip_df_chr12)
+  summarise(norm = sum(norm)) %>%
+  filter(bait %in% chr2_bins_bait$bait)
 
-
-gg8.p2.ctrl_df <- hic_contacts %>%
+gg8.p2.ctrl_df_chr2 <- hic_contacts %>%
   filter(geno == "gg8.p2.ctrl") %>%
   group_by(bait) %>%
-  summarise(norm = sum(norm))
-gg8.p2.ctrl_df_chr2 <- gg8.p2.ctrl_df[grep("2_", gg8.p2.ctrl_df$bait), ]
-gg8.p2.ctrl_df_chr12 <- gg8.p2.ctrl_df[grep("12_", gg8.p2.ctrl_df$bait),]
-gg8.p2.ctrl_df_chr2 <- anti_join(gg8.p2.ctrl_df_chr2, gg8.p2.ctrl_df_chr12)
+  summarise(norm = sum(norm)) %>%
+  filter(bait %in% chr2_bins_bait$bait)
 
 gg8.p2.norm <- left_join(gg8.p2.hichip_df_chr2, gg8.p2.ctrl_df_chr2, by = "bait") %>%
   mutate(foldchange = log(norm.x/norm.y))
@@ -279,33 +255,49 @@ df <- left_join(scatter.5min, gg8.p2.norm, by = "bait")
 
 #################################################
 #################################################
-           ### Correlation Plots ###
+### Correlation Plots ###
 #################################################
 #################################################
 
-a <- ggplot(scatter.5min %>% filter(bait_loc > 200000000, bait_loc < 500000000), aes(eigen, LOS)) + 
+a <- ggplot(scatter.5min %>% sample_n(1000), aes(eigen, LOS)) + 
   ylim(-0.2, 0.6) + 
   ggtitle("5-min Liquid Hi-C") + 
   geom_point(alpha = 0.5) + 
   theme_classic()
 
-b <- ggplot(scatter.30min %>% filter(bait_loc > 200000000, bait_loc < 500000000), aes(eigen, LOS)) + 
+b <- ggplot(scatter.30min%>% sample_n(1000), aes(eigen, LOS)) + 
   ylim(-0.2, 0.6) + 
   ggtitle("30-min Liquid Hi-C") + 
   geom_point(alpha = 0.5)+ 
   theme_classic()
 
-c <- ggplot(scatter.60min %>% filter(bait_loc > 200000000, bait_loc < 500000000), aes(eigen, LOS)) + 
+c <- ggplot(scatter.60min%>% sample_n(1000), aes(eigen, LOS)) + 
   ylim(-0.2, 0.6) + 
   ggtitle("60-min Liquid Hi-C") + 
   geom_point(alpha = 0.5)+ 
   theme_classic()
 
-d <- ggplot(df %>% filter(bait_loc > 200000000, bait_loc < 500000000), aes(eigen, foldchange)) + 
+d <- ggplot(df%>% sample_n(1000), aes(eigen, foldchange)) + 
   geom_point(alpha = 0.5)+ 
   ggtitle("H3K27ac HiChIP") + 
   theme_classic()
 
 a + b + c + d + plot_layout(ncol = 4)
 
+
+#################################################
+#################################################
+### Formatting ###
+#################################################
+#################################################
+
+scatter_format.5min <- scatter.5min %>% sample_n(1000) %>% select(eigen, LOS) %>% mutate(condition = '5-min Pre-Dig')
+scatter_format.30min <- scatter.30min %>% sample_n(1000) %>% select(eigen, LOS) %>% mutate(condition = '30-min Pre-Dig')
+scatter_format.60min <- scatter.60min %>% sample_n(1000) %>% select(eigen, LOS) %>% mutate(condition = '60-min Pre-Dig')
+
+scatter_format <- rbind(scatter_format.5min, scatter_format.30min, scatter_format.60min)
+hichip_format <- df %>% sample_n(1000) %>% select(eigen, foldchange) %>% mutate(condition = 'hichip')
+
+write.table(scatter_format, file = "/media/storageE/ariel/R/finalpaper_August2023/liquidhic/liquid.hic.LOS/SuppFig7b_LOS.txt", sep = '\t')
+write.table(hichip_format, file = "/media/storageE/ariel/R/finalpaper_August2023/liquidhic/liquid.hic.LOS/SuppFig7c_HiChIPFoldChange.txt", sep = '\t')
 

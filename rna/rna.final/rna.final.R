@@ -23,7 +23,7 @@ library(patchwork)
 # set directory to current directory
 # this directory should contain all files in the GitHub folder
 
-setwd("/media/storageE/ariel/R/finalpaper_August2023/rna.final") 
+setwd("/media/storageE/ariel/R/finalpaper_August2023/rna/rna.final/") 
 
 #######################################
 ############## FUNCTIONS ##############
@@ -55,36 +55,36 @@ exonsByGene <- exonsBy(genes_txdb, by="gene")
 
 # Only do this one time to generate table rds file of raw counts
 
-# # Developmental Files
-# sampleTable_dev <- read.delim("rna.final/sampletable_complete.txt",header =T)
-# bamfiles_dev <- filenames <- file.path(sampleTable_dev$data)
-# bamfiles_dev <- BamFileList(bamfiles_dev)
-# rna_dev <- summarizeOverlaps(features=exonsByGene, reads=bamfiles, mode="Union", singleEnd=FALSE, 
-#                          ignore.strand=FALSE, preprocess.reads=invertStrand)
-# 
-# 
-# colData(rna_dev) <- DataFrame(sampleTable_dev)
-# colnames(rna_dev)<-sampleTable$library
-# saveRDS(rna_dev, file = "rna.final/rna_dev.rds")
-# 
-# # mutantsant Files
-# sampleTable_mutants <- read.delim("rna.final/sampletable_complete_ptII.txt",header =T)
-# bamfiles_mutants <- filenames <- file.path(sampleTable_mutants$data)
-# bamfiles_mutants <- BamFileList(bamfiles_mutants)
-# rna_mutants <- summarizeOverlaps(features=exonsByGene, reads=bamfiles, mode="Union", singleEnd=FALSE, 
-#                              ignore.strand=FALSE, preprocess.reads=invertStrand)
-# 
-# 
-# colData(rna_mutants) <- DataFrame(sampleTable_mutants)
-# colnames(rna_mutants)<-sampleTable$library
-# saveRDS(rna_mutants, file = "rna.final/rna_mutants.rds")
+# Developmental Files
+sampleTable_dev <- read.delim("sampletable_complete.txt",header =T)
+bamfiles_dev <- filenames <- file.path(sampleTable_dev$data)
+bamfiles_dev <- BamFileList(bamfiles_dev)
+rna_dev <- summarizeOverlaps(features=exonsByGene, reads=bamfiles_dev, mode="Union", singleEnd=FALSE,
+                         ignore.strand=FALSE, preprocess.reads=invertStrand)
+
+
+colData(rna_dev) <- DataFrame(sampleTable_dev)
+colnames(rna_dev)<-sampleTable_dev$library
+saveRDS(rna_dev, file = "rna_dev.rds")
+
+# mutantsant Files
+sampleTable_mutants <- read.delim("sampletable_complete_ptII.txt",header =T)
+bamfiles_mutants <- filenames <- file.path(sampleTable_mutants$data)
+bamfiles_mutants <- BamFileList(bamfiles_mutants)
+rna_mutants <- summarizeOverlaps(features=exonsByGene, reads=bamfiles_mutants, mode="Union", singleEnd=FALSE,
+                             ignore.strand=FALSE, preprocess.reads=invertStrand)
+
+
+colData(rna_mutants) <- DataFrame(sampleTable_mutants)
+colnames(rna_mutants)<-sampleTable_mutants$library
+saveRDS(rna_mutants, file = "rna_mutants.rds")
 
 #######################################
 ########## LOADING RAW COUNTS #########
 #######################################
 
-rna_dev <- readRDS(file = "rna.final/rna_dev.rds")
-rna_mutants <- readRDS(file = "rna.final/rna_mutants.rds")
+rna_dev <- readRDS(file = "rna_dev.rds")
+rna_mutants <- readRDS(file = "rna_mutants.rds")
 
 setequal(rowData(rna_dev)@rownames, rowData(rna_mutants)@rownames) ## TRUE
 idx <- match(rowData(rna_dev)@rownames, rowData(rna_mutants)@rownames)
@@ -372,84 +372,31 @@ j <- ggplot(resLFC_j %>% arrange(sig), aes(x = baseMean, y = log2FoldChange)) +
 a + b + c + d + e + f + g + h + i + j + plot_layout(nrow = 2)
 
 
+resLFC_a$comparison <- "OMPtTA_tetOP2 vs. OMPtTA_tetOGFP"
+resLFC_b$comparison <- "gg8tTA_tetOP2 vs. OMPtTA_tetOGFP"
+resLFC_c$comparison <- "OMPtTA_tetOP2(nc) vs. OMPtTA_tetOGFP"
+resLFC_d$comparison <- "gg8tTA_tetOP2(nc) vs. gg8tTA_tetOGFP"
+resLFC_f$comparison <- "OMPtTA_tetOP2 vs. OMPGFP"
+resLFC_g$comparison <- "gg8tTA_tetOP2 vs. OMPGFP"
+resLFC_h$comparison <- "OMPtTA_tetOP2(nc) vs. OMPGFP"
+resLFC_i$comparison <- "gg8tTA_tetOP2(nc) vs. Atf5iRFP+/OMPGFP-"
 
-resLFC <- lfcShrink(dds, contrast = c("condition", "OMPtTA_tetOGFP", "OMP"), type="normal")
-resLFC <- resLFC[row.names(resLFC) %in% Olfr,]
-resLFC_sig <- resLFC %>% as.data.frame() %>% dplyr::filter(padj < 0.05) %>% mutate(sig = "yes")
-resLFC_nonsig <- resLFC %>% as.data.frame() %>% dplyr::filter(padj >= 0.05) %>% mutate(sig = "no")
-resLFC_nonsig_NA <- resLFC %>% as.data.frame() %>% dplyr::filter(is.na(padj)) %>% mutate(sig = "no")
-resLFC_k <- rbind(resLFC_sig, resLFC_nonsig, resLFC_nonsig_NA)
+resLFC_supplement <- rbind(resLFC_a, resLFC_b,resLFC_c, resLFC_d,resLFC_f,  resLFC_g, resLFC_h, resLFC_i)
+write.table(resLFC_supplement, file = "/media/storageE/ariel/R/finalpaper_August2023/rna/rna.final/Fig4b4c5a5bS10c_MAPlots_P2.txt")
 
-ggplot(resLFC_k %>% arrange(sig), aes(x = baseMean, y = log2FoldChange)) + 
-  geom_point(size = 0.5, aes(color = sig)) + 
-  scale_x_log10() + 
-  scale_color_manual(values = c("darkslategrey", "red")) + 
-  geom_hline(yintercept = 0, linetype="dotted", color = "red", size=1.5) +  
-  ylim(-10,15) + 
-  theme_classic() +
-  theme(legend.position = "none") + 
-  ggtitle("OMPtTA_tetOGFP vs. OMP") + 
-  ylab("log2FC mut/ctrl") + 
-  xlab("mean of normalized counts")
-
-
-# Developmental Gene Counts
-
-geneCounts_Krt5 <- plotCounts(dds[,neuronal_lineage], gene ="Krt5", intgroup = c("condition"),returnData = TRUE)
-geneCounts_Ascl1 <- plotCounts(dds[,neuronal_lineage], gene ="Ascl1", intgroup = c("condition"),returnData = TRUE)
-geneCounts_Neurog1 <- plotCounts(dds[,neuronal_lineage], gene ="Neurog1", intgroup = c("condition"),returnData = TRUE)
-geneCounts_Neurod1 <- plotCounts(dds[,neuronal_lineage], gene ="Neurod1", intgroup = c("condition"),returnData = TRUE)
-geneCounts_Tex15 <- plotCounts(dds[,neuronal_lineage], gene ="Tex15", intgroup = c("condition"),returnData = TRUE)
-geneCounts_Gap43 <- plotCounts(dds[,neuronal_lineage], gene ="Gap43", intgroup = c("condition"),returnData = TRUE)
-geneCounts_Omp <- plotCounts(dds[,neuronal_lineage], gene ="Omp", intgroup = c("condition"),returnData = TRUE)
-geneCounts_Atf5 <- plotCounts(dds[,neuronal_lineage], gene ="Atf5", intgroup = c("condition"),returnData = TRUE)
-
-k <- ggplot(geneCounts_Krt5, aes(x = condition, y = count)) +
-  scale_y_log10() +  geom_point(cex = 3) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
-  ggtitle("Krt5 expression")
-
-l <- ggplot(geneCounts_Ascl1, aes(x = condition, y = count)) +
-  scale_y_log10() +  geom_point(cex = 3) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ 
-  ggtitle("Ascl1 expression")
-
-m <- ggplot(geneCounts_Neurog1, aes(x = condition, y = count)) +
-  scale_y_log10() +  geom_point(cex = 3) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ 
-  ggtitle("Neurog1 expression")
-
-n <- ggplot(geneCounts_Neurod1, aes(x = condition, y = count)) +
-  scale_y_log10() +  geom_point(cex = 3) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ 
-  ggtitle("Neurod1 expression")
-
-o <- ggplot(geneCounts_Tex15, aes(x = condition, y = count)) +
-  scale_y_log10() +  geom_point(cex = 3) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ 
-  ggtitle("Tex15 expression")
-
-p <- ggplot(geneCounts_Gap43, aes(x = condition, y = count)) +
-  scale_y_log10() +  geom_point(cex = 3) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ 
-  ggtitle("Gap43 expression")
-
-q <- ggplot(geneCounts_Omp, aes(x = condition, y = count)) +
-  scale_y_log10() +  geom_point(cex = 3) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ 
-  ggtitle("Omp expression")
-
-r <- ggplot(geneCounts_Atf5, aes(x = condition, y = count)) +
-  scale_y_log10() +  geom_point(cex = 3) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ 
-  ggtitle("Atf5 expression")
-
-k + l + m + n + o + p + q + r + plot_layout(ncol = 4)
-
+####
 
 geneCounts_Lhx2 <- plotCounts(dds[,neuronal_lineage], gene ="Lhx2", intgroup = c("condition"),returnData = TRUE)
 geneCounts_Ebf1 <- plotCounts(dds[,neuronal_lineage], gene ="Ebf1", intgroup = c("condition"),returnData = TRUE)
 geneCounts_Ldb1 <- plotCounts(dds[,neuronal_lineage], gene ="Ldb1", intgroup = c("condition"),returnData = TRUE)
+
+geneCounts_Lhx2$gene <- "Lhx2"
+geneCounts_Ebf1$gene <- "Ebf1"
+geneCounts_Ldb1$gene <- "Ldb1"
+
+geneCounts_supplement <- rbind(geneCounts_Lhx2,geneCounts_Ebf1,geneCounts_Ldb1)
+
+write.table(geneCounts_supplement, file =  "/media/storageE/ariel/R/finalpaper_August2023/rna/rna.final/SuppFig2a_genecounts.txt")
 
 s <- ggplot(geneCounts_Lhx2, aes(x = condition, y = count)) +
   scale_y_log10() +  geom_point(cex = 3) +
@@ -467,3 +414,60 @@ u <- ggplot(geneCounts_Ldb1, aes(x = condition, y = count)) +
   ggtitle("Ldb1 expression")
 
 s + t + u
+
+
+
+# Developmental Gene Counts
+# 
+# geneCounts_Krt5 <- plotCounts(dds[,neuronal_lineage], gene ="Krt5", intgroup = c("condition"),returnData = TRUE)
+# geneCounts_Ascl1 <- plotCounts(dds[,neuronal_lineage], gene ="Ascl1", intgroup = c("condition"),returnData = TRUE)
+# geneCounts_Neurog1 <- plotCounts(dds[,neuronal_lineage], gene ="Neurog1", intgroup = c("condition"),returnData = TRUE)
+# geneCounts_Neurod1 <- plotCounts(dds[,neuronal_lineage], gene ="Neurod1", intgroup = c("condition"),returnData = TRUE)
+# geneCounts_Tex15 <- plotCounts(dds[,neuronal_lineage], gene ="Tex15", intgroup = c("condition"),returnData = TRUE)
+# geneCounts_Gap43 <- plotCounts(dds[,neuronal_lineage], gene ="Gap43", intgroup = c("condition"),returnData = TRUE)
+# geneCounts_Omp <- plotCounts(dds[,neuronal_lineage], gene ="Omp", intgroup = c("condition"),returnData = TRUE)
+# geneCounts_Atf5 <- plotCounts(dds[,neuronal_lineage], gene ="Atf5", intgroup = c("condition"),returnData = TRUE)
+# 
+# k <- ggplot(geneCounts_Krt5, aes(x = condition, y = count)) +
+#   scale_y_log10() +  geom_point(cex = 3) +
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+#   ggtitle("Krt5 expression")
+# 
+# l <- ggplot(geneCounts_Ascl1, aes(x = condition, y = count)) +
+#   scale_y_log10() +  geom_point(cex = 3) +
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ 
+#   ggtitle("Ascl1 expression")
+# 
+# m <- ggplot(geneCounts_Neurog1, aes(x = condition, y = count)) +
+#   scale_y_log10() +  geom_point(cex = 3) +
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ 
+#   ggtitle("Neurog1 expression")
+# 
+# n <- ggplot(geneCounts_Neurod1, aes(x = condition, y = count)) +
+#   scale_y_log10() +  geom_point(cex = 3) +
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ 
+#   ggtitle("Neurod1 expression")
+# 
+# o <- ggplot(geneCounts_Tex15, aes(x = condition, y = count)) +
+#   scale_y_log10() +  geom_point(cex = 3) +
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ 
+#   ggtitle("Tex15 expression")
+# 
+# p <- ggplot(geneCounts_Gap43, aes(x = condition, y = count)) +
+#   scale_y_log10() +  geom_point(cex = 3) +
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ 
+#   ggtitle("Gap43 expression")
+# 
+# q <- ggplot(geneCounts_Omp, aes(x = condition, y = count)) +
+#   scale_y_log10() +  geom_point(cex = 3) +
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ 
+#   ggtitle("Omp expression")
+# 
+# r <- ggplot(geneCounts_Atf5, aes(x = condition, y = count)) +
+#   scale_y_log10() +  geom_point(cex = 3) +
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ 
+#   ggtitle("Atf5 expression")
+# 
+# k + l + m + n + o + p + q + r + plot_layout(ncol = 4)
+# 
+# 

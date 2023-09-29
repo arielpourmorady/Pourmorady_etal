@@ -206,3 +206,23 @@ a <- ggplot(neuronal_RYG_lineage_norm_counts, aes(x = geno, y = mean_counts, col
   scale_y_log10() + 
   scale_color_manual(values = c("black", "firebrick3", "green4"))
 a
+
+neuronal_RYG_lineage_norm_counts_supplement <- neuronal_RYG_lineage_norm_counts %>% dplyr::select(geno, rep, OR, mean_counts)
+write.table(neuronal_RYG_lineage_norm_counts_supplement, file = "/media/storageE/ariel/R/finalpaper_August2023/rna/ompttatetop2.mor28icretdt.rna/Fig4h_ORSwitchingTPM.txt", sep = "\t")
+
+
+geneCounts_Olfr17 <- plotCounts(dds[,mor28icretdTom_ompttatetop2], gene ="Olfr17", intgroup = c("condition"),returnData = TRUE)
+geneCounts_Olfr1507 <- plotCounts(dds[,mor28icretdTom_ompttatetop2], gene ="Olfr1507", intgroup = c("condition"),returnData = TRUE)
+
+
+t <- ggplot(geneCounts_Olfr17, aes(x = condition, y = count)) +
+  scale_y_log10() +  geom_point(cex = 3) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ 
+  ggtitle("P2 expression")
+
+u <- ggplot(geneCounts_Olfr1507, aes(x = condition, y = count)) +
+  scale_y_log10() +  geom_point(cex = 3) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ 
+  ggtitle("mor28 expression")
+
+ t + u

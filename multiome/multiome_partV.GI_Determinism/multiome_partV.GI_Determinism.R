@@ -83,7 +83,13 @@ list_of_cells_expressing_OR <- row.names(maxOR_exp_percell)
 
 df_clean <- readRDS('/data/finalpaper_revisions/multiome_partVII.GI_Determinism/cli_program/df_clean.rds')
 
-grouped_GI_freq <- df_clean %>%
+df_clean_nodup <- df_clean[!duplicated(data.frame(t(apply(df_clean[1:2], 1, sort)), df_clean$a)),]
+
+grouped_GI_freq_nonorm <- df_clean_nodup %>%
+  group_by(a) %>%
+  summarise(count = n()) 
+
+grouped_GI_freq <- df_clean_nodup %>%
   group_by(a) %>%
   summarise(count = n()) %>%
   mutate(count = count/sum(count)*100)
@@ -96,20 +102,22 @@ a <- ggplot(grouped_GI_freq, aes(x = a, y = count)) +
   xlab('number of GIs in common') + 
   theme_classic()
 
+a
+
 
 df4 <- data.frame()
 df4_a <- data.frame()
 for (k in grouped_GI_freq$a){
   num <- k
-  df_clean_num_left <- df_clean %>%
+  df_clean_nodup_num_left <- df_clean_nodup %>%
     dplyr::filter(a == num) %>%
     dplyr::select(name_i) %>% 
     unique() %>% as.list()
-  df_clean_num_right <- df_clean %>%
+  df_clean_nodup_num_right <- df_clean_nodup %>%
     dplyr::filter(a == num) %>%
     dplyr::select(name_j) %>% unique() %>% as.list()
-  df_clean_union <- union(df_clean_num_left$name_i, df_clean_num_right$name_j)
-  ORsPerCombo <- maxOR_exp_percell[df_clean_union,] %>% 
+  df_clean_nodup_union <- union(df_clean_nodup_num_left$name_i, df_clean_nodup_num_right$name_j)
+  ORsPerCombo <- maxOR_exp_percell[df_clean_nodup_union,] %>% 
     as.data.frame() %>%
     dplyr::rename('olfr' = '.') %>%
     mutate(common_islands = num)
@@ -117,7 +125,7 @@ for (k in grouped_GI_freq$a){
     group_by(olfr) %>%
     summarise(count = n()/nrow(ORsPerCombo)) %>%
     mutate(common_islands = num,
-           unique_cells = length(df_clean_union))
+           unique_cells = length(df_clean_nodup_union))
   df4 <- rbind(df4, ORsPerCombo)
   df4_a <- rbind(df4_a, ORsPerCombo_a)
 }
@@ -161,3 +169,20 @@ d <- ggplot(df4_a, aes(x = common_islands, y = count, fill = olfr)) +
   ylab('OR frequency')
 
 a + c + d
+
+###
+###
+###
+
+df6 <- df4_a_mean_se %>%
+  dplyr::rename('NumGIsInCommon' = 'common_islands',
+                'ORfreq_avg' = 'mean',
+                'ORfreq_se' = 'se')
+
+supplementary_file <- grouped_GI_freq %>%
+  dplyr::rename('NumGIsInCommon' = 'a',
+                'PcOSNPairsWithGIsInCommon' = count) %>%
+  left_join(., df6, by = 'NumGIsInCommon')
+
+write.table(supplementary_file, file = '/data/finalpaper_August2023/multiome_partV.GI_Determinism/Fig1l_1m_GIDeterminism.txt', 
+            sep = '\t', col.names = TRUE)
