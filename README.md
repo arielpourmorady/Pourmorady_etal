@@ -2,7 +2,7 @@
 ![OE](https://github.com/arielpourmorady/Pourmorady_etal/assets/70916908/eb65d636-d6cc-40b5-8402-c6de752cb008)
 
 ## Introduction
-This repository is divided into several directories and subdirectories that contain scripts for analyzing data associated with the paper "Olfactory receptor mRNAs act as “selfish” non-coding RNAs that enforce transcriptional singularity" (Pourmorady et al., 202X).
+This repository is divided into several directories and subdirectories that contain scripts for analyzing data associated with the paper "A symmetry breaking process proposes noncoding functions for olfactory receptor RNAs" (Pourmorady et al., 2023).
 
 All analysis, with the exception of pymol generated models, was performed in RStudio.
 
