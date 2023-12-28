@@ -4,6 +4,8 @@
 ## Introduction
 This repository is divided into several directories and subdirectories that contain scripts for analyzing data associated with the paper "RNA-mediated symmetry breaking enables singular olfactory receptor choice" (Pourmorady et al., 2023).
 
+https://www.nature.com/articles/s41586-023-06845-4
+
 All analysis, with the exception of pymol generated models, was performed in RStudio.
 
 Directories are divided by methodology and may contain subdirectories that are specific to certain panels within figures. 
